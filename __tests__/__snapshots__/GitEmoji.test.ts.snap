@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`GitEmoji areas required 1`] = `[Error: At least one area is required]`;
+
+exports[`GitEmoji commit body required 1`] = `[Error: Commit body is required]`;
+
+exports[`GitEmoji commit with intentions, areas, and a body 1`] = `
+"✔️ ✅ | Dashboard, User settings
+
+✔️ Make a test pass, ✅ Adding a test
+
+- Dashboard
+- User settings
+
+Testing for certain things"
+`;
+
+exports[`GitEmoji custom title and body formatters 1`] = `
+"✔️ Make a test pass, ✅ Adding a test
+
+Custom body"
+`;
