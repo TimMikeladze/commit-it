@@ -1,6 +1,6 @@
 {
   "name": "commit-it",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI tool to generate a pretty commit message and log. Integrates with Github Labels. Extendable with plugins.",
   "author": "Tim Mikeladze <tim.mikeladze@gmail.com>",
   "keywords": [],
@@ -29,12 +29,12 @@
     "build": "rm -rf dist && tsc && microbundle src/{index,cli}.ts --target node",
     "lint": "eslint --fix {src,__tests__}/**/*.ts && prettier --write .",
     "test": "yarn node --experimental-vm-modules $(yarn bin jest) --coverage",
-    "prepublishOnly": "yarn lint && yarn build",
+    "prepublishOnly": "yarn lint && yarn test && yarn build",
     "release": "release-it"
   },
   "release-it": {
     "git": {
-      "commitMessage": "\uD83D\uDD16 | v${version}"
+      "commitMessage": "🔖 | v${version}"
     },
     "github": {
       "release": true
