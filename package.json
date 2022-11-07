@@ -1,6 +1,6 @@
 {
   "name": "commit-it",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "CLI tool to generate a pretty commit message and log. Integrates with Github Labels. Extendable with plugins.",
   "author": "Tim Mikeladze <tim.mikeladze@gmail.com>",
   "keywords": [],
