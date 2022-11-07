@@ -11,8 +11,10 @@ export interface GitEmojiOptions {
     text: string
   }[]
   areasRequired?: boolean
+  askForShortDescription?: boolean
   commitBodyRequired?: boolean
   formatBody?: ({
+    shortDescription,
     bodyText,
     commitBody,
     areas,
@@ -26,8 +28,10 @@ export interface GitEmojiOptions {
       description?: string
       text: string
     }[]
+    shortDescription: string
   }) => string
   formatTitle?: ({
+    shortDescription,
     titleText,
     commitBody,
     areas,
@@ -40,6 +44,7 @@ export interface GitEmojiOptions {
       description?: string
       text: string
     }[]
+    shortDescription: string
     titleText: string
   }) => string
   intentions?: {
@@ -288,7 +293,15 @@ export class GitEmoji extends CommitItPlugin {
         multiple: true,
         choices: allIntentions.map((x) => x.choice)
       })
-    ).selectedIntention.map((x) => allIntentions.find((y) => y.choice === x))
+    ).selectedIntention
+      .map((x) => allIntentions.find((y) => y.choice === x))
+      .sort((a, b) => a.description.localeCompare(b.description))
+
+    const noIntentions = !intentions || intentions.length === 0
+
+    if (noIntentions) {
+      throw new Error('No intention selected')
+    }
 
     let areas
     if (allAreas.length) {
@@ -304,8 +317,30 @@ export class GitEmoji extends CommitItPlugin {
         ?.map((x) => allAreas.find((y) => y.choice === x))
         .sort((a, b) => a.text.localeCompare(b.text))
     }
-    if (this.options.areasRequired && (!areas || !areas?.length)) {
+
+    const noAreasSelected = !areas || !areas?.length
+
+    if (this.options.areasRequired && noAreasSelected) {
       throw new Error('At least one area is required')
+    }
+
+    let shortDescription
+
+    if (
+      (noAreasSelected && this.options.askForShortDescription !== false) ||
+      this.options.askForShortDescription
+    ) {
+      shortDescription = (
+        await this.enquirer.prompt({
+          type: 'input',
+          name: 'shortDescription',
+          message: 'Short description:'
+        })
+      ).shortDescription
+
+      if (shortDescription) {
+        areas = [{ text: shortDescription }]
+      }
     }
 
     const {
@@ -329,6 +364,7 @@ export class GitEmoji extends CommitItPlugin {
 
     const formattedTitleText = this.options.formatTitle
       ? this.options.formatTitle({
+          shortDescription,
           titleText,
           commitBody,
           areas,
@@ -351,6 +387,7 @@ export class GitEmoji extends CommitItPlugin {
 
     const formattedBodyText = this.options.formatBody
       ? this.options.formatBody({
+          shortDescription,
           bodyText,
           commitBody,
           areas,

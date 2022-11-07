@@ -63,6 +63,11 @@ describe('GitEmoji', () => {
                   commitBody: ''
                 })
               }
+              if (questions.name === 'shortDescription') {
+                return Promise.resolve({
+                  shortDescription: 'short description of commit'
+                })
+              }
             }
           }
         )
@@ -150,5 +155,39 @@ describe('GitEmoji', () => {
     })
 
     expect(await commitIt.executePlugins()).toMatchSnapshot()
+  })
+  it('asks for a short description', async () => {
+    const commitIt = new CommitIt({
+      dryRun: true,
+      plugins: [
+        new GitEmoji(
+          {
+            commitBodyRequired: false,
+            askForShortDescription: true
+          },
+          {
+            async prompt(questions) {
+              if (questions.name === 'selectedIntention') {
+                return Promise.resolve({
+                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                })
+              }
+              if (questions.name === 'commitBody') {
+                return Promise.resolve({
+                  commitBody: 'commit body goes here'
+                })
+              }
+              if (questions.name === 'shortDescription') {
+                return Promise.resolve({
+                  shortDescription: 'short description of commit'
+                })
+              }
+            }
+          }
+        )
+      ]
+    })
+
+    await expect(commitIt.executePlugins()).resolves.toMatchSnapshot()
   })
 })

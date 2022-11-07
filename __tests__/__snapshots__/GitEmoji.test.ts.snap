@@ -2,12 +2,22 @@
 
 exports[`GitEmoji areas required 1`] = `[Error: At least one area is required]`;
 
+exports[`GitEmoji asks for a short description 1`] = `
+"✅ ✔️ | short description of commit
+
+✅ Adding a test, ✔️ Make a test pass
+
+- short description of commit
+
+commit body goes here"
+`;
+
 exports[`GitEmoji commit body required 1`] = `[Error: Commit body is required]`;
 
 exports[`GitEmoji commit with intentions, areas, and a body 1`] = `
-"✔️ ✅ | Dashboard, User settings
+"✅ ✔️ | Dashboard, User settings
 
-✔️ Make a test pass, ✅ Adding a test
+✅ Adding a test, ✔️ Make a test pass
 
 - Dashboard
 - User settings
@@ -16,7 +26,7 @@ Testing for certain things"
 `;
 
 exports[`GitEmoji custom title and body formatters 1`] = `
-"✔️ Make a test pass, ✅ Adding a test
+"✅ Adding a test, ✔️ Make a test pass
 
 Custom body"
 `;
