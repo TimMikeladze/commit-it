@@ -65,7 +65,15 @@ export class CommitIt {
     }
 
     if (this.options.dryRun !== true) {
-      await simpleGit().commit(message)
+      await simpleGit()
+        .outputHandler((cmd, stdout, stderr, ...args) => {
+          const out = []
+          stdout.on('data', (buffer) => out.push(buffer))
+          stdout.on('close', () =>
+            console.log(Buffer.concat(out).toString('utf8'))
+          )
+        })
+        .commit(message)
     }
 
     return message

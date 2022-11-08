@@ -190,4 +190,32 @@ describe('GitEmoji', () => {
 
     await expect(commitIt.executePlugins()).resolves.toMatchSnapshot()
   })
+  it('askForShortDescription: false and commitBodyRequired: false', async () => {
+    const commitIt = new CommitIt({
+      dryRun: true,
+      plugins: [
+        new GitEmoji(
+          {
+            askForShortDescription: false,
+            commitBodyRequired: false
+          },
+          {
+            async prompt(questions) {
+              if (questions.name === 'selectedIntention') {
+                return Promise.resolve({
+                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                })
+              }
+              if (questions.name === 'commitBody') {
+                return Promise.resolve({
+                  commitBody: 'commit body goes here'
+                })
+              }
+            }
+          }
+        )
+      ]
+    })
+    await expect(commitIt.executePlugins()).resolves.toMatchSnapshot()
+  })
 })

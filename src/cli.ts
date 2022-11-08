@@ -29,8 +29,7 @@ interface CommanderOptions {
 
   am.initialize().then(async () => {
     try {
-      const message = await am.executePlugins()
-      console.log('\n' + message + '\n')
+      await am.executePlugins()
       process.exit(0)
     } catch (err: any) {
       console.error(err.message)

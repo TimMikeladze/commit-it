@@ -360,7 +360,7 @@ export class GitEmoji extends CommitItPlugin {
     const titleText =
       intentions.map((x) => x.text).join(' ') +
       ' ' +
-      (areas ? `| ${areas.map((x) => x.text).join(', ')}` : '')
+      (areas ? `| ${areas.map((x) => x.text).join(', ')}` : `| ${commitBody}`)
 
     const formattedTitleText = this.options.formatTitle
       ? this.options.formatTitle({
@@ -378,10 +378,11 @@ export class GitEmoji extends CommitItPlugin {
     ]
 
     const bodyText = [
+      commitBody || '',
       intentions.map((x) => x.choice).join(', '),
-      areas?.map((x) => `- ${x.text}`).join('\n') || '',
-      commitBody || ''
+      areas?.map((x) => `- ${x.text}`).join('\n') || ''
     ]
+      .filter(Boolean)
       .join('\n\n')
       .trim()
 
