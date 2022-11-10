@@ -53,9 +53,11 @@ export interface GitEmojiOptions {
   }[]
   multipleAreas?: boolean
   multipleIntentions?: boolean
+  titleSeparator?: string
 }
 
 export const gitEmojiDefaultOptions: GitEmojiOptions = {
+  titleSeparator: '',
   multipleIntentions: true,
   multipleAreas: true,
   commitBodyRequired: true,
@@ -360,7 +362,12 @@ export class GitEmoji extends CommitItPlugin {
     const titleText =
       intentions.map((x) => x.text).join(' ') +
       ' ' +
-      (areas ? `| ${areas.map((x) => x.text).join(', ')}` : `| ${commitBody}`)
+      (areas
+        ? `${this.options.titleSeparator} ${areas
+            .map((x) => x.text)
+            .join(', ')}`.trim()
+        : `${this.options.titleSeparator} ${commitBody}`
+      ).trim()
 
     const formattedTitleText = this.options.formatTitle
       ? this.options.formatTitle({
