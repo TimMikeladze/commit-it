@@ -1,7 +1,5 @@
 import { CommitIt, GitEmoji } from '../src'
 
-// jest mock npm package import
-
 describe('GitEmoji', () => {
   it('commit with intentions, areas, and a body', async () => {
     const commitIt = new CommitIt({

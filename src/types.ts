@@ -1,5 +1,4 @@
 import Enquirer from 'enquirer'
-import { PromptOptions } from './GitEmoji'
 
 export interface CommitItOptions {
   dryRun?: boolean
@@ -7,6 +6,15 @@ export interface CommitItOptions {
   // eslint-disable-next-line no-use-before-define
   plugins?: CommitItPlugin[]
   titleSeparator?: string
+}
+
+export interface PluginOptions {
+  pluginId: string
+}
+
+export interface PromptOptions {
+  [key: string]: any
+  name: string
 }
 
 export interface EnquirerInterface {

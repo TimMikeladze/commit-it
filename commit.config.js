@@ -8,7 +8,13 @@ export default {
           text: 'CLI commands'
         },
         {
-          text: 'Plugins'
+          text: 'Plugins - Core'
+        },
+        {
+          text: 'Plugins - GitEmoji'
+        },
+        {
+          text: 'Plugins - IntentionsAndArea'
         }
       ]
     })
