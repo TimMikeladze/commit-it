@@ -22,12 +22,14 @@ export class CommitIt {
   ): Promise<CommitItOptions> {
     const p = path.resolve(configPath)
     if (!fs.existsSync(p)) {
-      throw new Error(`Config file ${p} not found.`)
+      return {
+        plugins: [new GitEmoji()]
+      }
+    } else {
+      const importedConfig = await import(p)
+
+      return importedConfig.default
     }
-
-    const importedConfig = await import(p)
-
-    return importedConfig.default
   }
 
   public async initialize(): Promise<void> {}
