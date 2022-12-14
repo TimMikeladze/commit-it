@@ -62,8 +62,7 @@ export interface IntentionAndAreaPluginOptions extends PluginOptions {
   titleSeparator?: string
 }
 
-export class IntentionAndAreaPlugin extends CommitItPlugin {
-  private readonly options: IntentionAndAreaPluginOptions
+export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPluginOptions> {
   constructor(
     options?: IntentionAndAreaPluginOptions,
     enquirer?: EnquirerInterface
@@ -215,8 +214,8 @@ export class IntentionAndAreaPlugin extends CommitItPlugin {
     commit.title = [
       ...(commit.title || []),
       {
-        pluginId: this.pluginId,
-        pluginAction: this.pluginAction,
+        pluginId: this.options.pluginId,
+        pluginAction: this.options.pluginAction,
         text: formattedTitleText
       }
     ]
@@ -245,8 +244,8 @@ export class IntentionAndAreaPlugin extends CommitItPlugin {
     commit.body = [
       ...(commit.body || []),
       {
-        pluginId: this.pluginId,
-        pluginAction: this.pluginAction,
+        pluginId: this.options.pluginId,
+        pluginAction: this.options.pluginAction,
         text: formattedBodyText
       }
     ]

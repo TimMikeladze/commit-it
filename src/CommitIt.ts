@@ -43,7 +43,7 @@ export class CommitIt {
 
     for (const plugin of plugins) {
       let result
-      if (plugin.pluginAction !== 'run') {
+      if (plugin.options.pluginAction !== 'run') {
         result = await plugin.load(options, commit)
         options = result[0]
         commit = result[1]
@@ -52,7 +52,7 @@ export class CommitIt {
 
     for (const plugin of plugins) {
       let result
-      if (plugin.pluginAction !== 'load') {
+      if (plugin.options.pluginAction !== 'load') {
         result = await plugin.run(options, commit)
       }
       options = result[0]

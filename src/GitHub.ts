@@ -1,4 +1,4 @@
-import { EnquirerInterface } from './types'
+import { Commit, CommitItOptions, EnquirerInterface } from './types'
 import {
   IntentionAndAreaPlugin,
   IntentionAndAreaPluginOptions
