@@ -7,7 +7,10 @@ exports[`GitEmoji askForShortDescription: false and commitBodyRequired: false 1`
 
 commit body goes here
 
-✅ Adding a test, ✔️ Make a test pass"
+**Intentions:**
+
+- ✅ Adding a test
+- ✔️ Make a test pass"
 `;
 
 exports[`GitEmoji asks for a short description 1`] = `
@@ -15,7 +18,12 @@ exports[`GitEmoji asks for a short description 1`] = `
 
 commit body goes here
 
-✅ Adding a test, ✔️ Make a test pass
+**Intentions:**
+
+- ✅ Adding a test
+- ✔️ Make a test pass
+
+**Areas:**
 
 - short description of commit"
 `;
@@ -27,7 +35,12 @@ exports[`GitEmoji commit with intentions, areas, and a body 1`] = `
 
 Testing for certain things
 
-✅ Adding a test, ✔️ Make a test pass
+**Intentions:**
+
+- ✅ Adding a test
+- ✔️ Make a test pass
+
+**Areas:**
 
 - Dashboard
 - User settings"

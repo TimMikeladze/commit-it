@@ -386,7 +386,9 @@ export class GitEmoji extends CommitItPlugin {
 
     const bodyText = [
       commitBody || '',
-      intentions.map((x) => x.choice).join(', '),
+      intentions?.length > 0 && '**Intentions:**',
+      intentions?.map((x) => `- ${x.choice}`).join('\n') || '',
+      areas?.length > 0 && '**Areas:**',
       areas?.map((x) => `- ${x.text}`).join('\n') || ''
     ]
       .filter(Boolean)
