@@ -7,177 +7,177 @@ import {
 export const gitEmojiIntentions = [
   {
     description: 'Initial commit',
-    text: '🎉'
+    name: '🎉'
   },
   {
     description: 'Version tag',
-    text: '🔖'
+    name: '🔖'
   },
   {
     description: 'New feature',
-    text: '✨'
+    name: '✨'
   },
   {
     description: 'Bugfix',
-    text: '🐛'
+    name: '🐛'
   },
   {
     description: 'Metadata',
-    text: '📇'
+    name: '📇'
   },
   {
     description: 'Documentation',
-    text: '📚'
+    name: '📚'
   },
   {
     description: 'Documenting source code',
-    text: '💡'
+    name: '💡'
   },
   {
     description: 'Performance',
-    text: '🐎'
+    name: '🐎'
   },
   {
     description: 'Cosmetic',
-    text: '💄'
+    name: '💄'
   },
   {
     description: 'Tests',
-    text: '🚨'
+    name: '🚨'
   },
   {
     description: 'Adding a test',
-    text: '✅'
+    name: '✅'
   },
   {
     description: 'Make a test pass',
-    text: '✔️'
+    name: '✔️'
   },
   {
     description: 'General update',
-    text: '⚡'
+    name: '⚡'
   },
   {
     description: 'Improve format/structure',
-    text: '🎨'
+    name: '🎨'
   },
   {
     description: 'Refactor code',
-    text: '🔨'
+    name: '🔨'
   },
   {
     description: 'Removing code/files',
-    text: '🔥'
+    name: '🔥'
   },
   {
     description: 'Continuous Integration',
-    text: '💚'
+    name: '💚'
   },
   {
     description: 'Security',
-    text: '🔒'
+    name: '🔒'
   },
   {
     description: 'Upgrading dependencies',
-    text: '⬆️'
+    name: '⬆️'
   },
   {
     description: 'Downgrading dependencies',
-    text: '⬇️'
+    name: '⬇️'
   },
   {
     description: 'Lint',
-    text: '👕'
+    name: '👕'
   },
   {
     description: 'Translation',
-    text: '👽'
+    name: '👽'
   },
   {
     description: 'Text',
-    text: '📝'
+    name: '📝'
   },
   {
     description: 'Critical hotfix',
-    text: '🚑'
+    name: '🚑'
   },
   {
     description: 'Deploying stuff',
-    text: '🚀'
+    name: '🚀'
   },
   {
     description: 'Fixing on MacOS',
-    text: '🍎'
+    name: '🍎'
   },
   {
     description: 'Fixing on Linux',
-    text: '🐧'
+    name: '🐧'
   },
   {
     description: 'Fixing on Windows',
-    text: '🏁'
+    name: '🏁'
   },
   {
     description: 'Work in progress',
-    text: '🚧'
+    name: '🚧'
   },
   {
     description: 'Adding CI build system',
-    text: '👷'
+    name: '👷'
   },
   {
     description: 'Analytics or tracking code',
-    text: '📈'
+    name: '📈'
   },
   {
     description: 'Removing a dependency',
-    text: '➖'
+    name: '➖'
   },
   {
     description: 'Adding a dependency',
-    text: '➕'
+    name: '➕'
   },
   {
     description: 'Docker',
-    text: '🐳'
+    name: '🐳'
   },
   {
     description: 'Configuration files',
-    text: '🔧'
+    name: '🔧'
   },
   {
     description: 'Package.json in JS',
-    text: '📦'
+    name: '📦'
   },
   {
     description: 'Merging branches',
-    text: '🔀'
+    name: '🔀'
   },
   {
     description: 'Bad code / need improv.',
-    text: '💩'
+    name: '💩'
   },
   {
     description: 'Reverting changes',
-    text: '⏪'
+    name: '⏪'
   },
   {
     description: 'Breaking changes',
-    text: '💥'
+    name: '💥'
   },
 
   {
     description: 'Code review changes',
-    text: '👌'
+    name: '👌'
   },
 
   {
     description: 'Accessibility',
-    text: '♿'
+    name: '♿'
   },
   {
     description: 'Move/rename repository',
-    text: '🚚'
+    name: '🚚'
   }
 ]
 
@@ -189,7 +189,7 @@ export const gitEmojiDefaultOptions: IntentionAndAreaPluginOptions = {
   commitBodyRequired: true,
   areasRequired: false,
   intentions: gitEmojiIntentions,
-  sortAreas: (a, b) => a.text.localeCompare(b.text)
+  sortAreas: (a, b) => a.name.localeCompare(b.name)
 }
 
 export class GitEmoji extends IntentionAndAreaPlugin {

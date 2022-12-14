@@ -9,10 +9,10 @@ describe('GitEmoji', () => {
           {
             areas: [
               {
-                text: 'User settings'
+                name: 'User settings'
               },
               {
-                text: 'Dashboard'
+                name: 'Dashboard'
               }
             ]
           },
@@ -20,7 +20,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'selectedArea') {
@@ -39,7 +42,7 @@ describe('GitEmoji', () => {
       ]
     })
 
-    expect(await commitIt.executePlugins()).toMatchSnapshot()
+    expect(await commitIt.execute()).toMatchSnapshot()
   })
   it('commit body required', async () => {
     const commitIt = new CommitIt({
@@ -53,7 +56,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'commitBody') {
@@ -72,7 +78,7 @@ describe('GitEmoji', () => {
       ]
     })
 
-    await expect(commitIt.executePlugins()).rejects.toMatchSnapshot()
+    await expect(commitIt.execute()).rejects.toMatchSnapshot()
   })
   it('areas required', async () => {
     const commitIt = new CommitIt({
@@ -86,7 +92,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'selectedArea') {
@@ -105,7 +114,7 @@ describe('GitEmoji', () => {
       ]
     })
 
-    await expect(commitIt.executePlugins()).rejects.toMatchSnapshot()
+    await expect(commitIt.execute()).rejects.toMatchSnapshot()
   })
 
   it('custom title and body formatters', async () => {
@@ -122,10 +131,10 @@ describe('GitEmoji', () => {
             },
             areas: [
               {
-                text: 'User settings'
+                name: 'User settings'
               },
               {
-                text: 'Dashboard'
+                name: 'Dashboard'
               }
             ]
           },
@@ -133,7 +142,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'selectedArea') {
@@ -152,7 +164,7 @@ describe('GitEmoji', () => {
       ]
     })
 
-    expect(await commitIt.executePlugins()).toMatchSnapshot()
+    expect(await commitIt.execute()).toMatchSnapshot()
   })
   it('asks for a short description', async () => {
     const commitIt = new CommitIt({
@@ -167,7 +179,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'commitBody') {
@@ -186,7 +201,7 @@ describe('GitEmoji', () => {
       ]
     })
 
-    await expect(commitIt.executePlugins()).resolves.toMatchSnapshot()
+    await expect(commitIt.execute()).resolves.toMatchSnapshot()
   })
   it('askForShortDescription: false and commitBodyRequired: false', async () => {
     const commitIt = new CommitIt({
@@ -201,7 +216,10 @@ describe('GitEmoji', () => {
             async prompt(questions) {
               if (questions.name === 'selectedIntention') {
                 return Promise.resolve({
-                  selectedIntention: ['✔️ Make a test pass', '✅ Adding a test']
+                  selectedIntention: [
+                    '✔️ - Make a test pass',
+                    '✅ - Adding a test'
+                  ]
                 })
               }
               if (questions.name === 'commitBody') {
@@ -214,6 +232,6 @@ describe('GitEmoji', () => {
         )
       ]
     })
-    await expect(commitIt.executePlugins()).resolves.toMatchSnapshot()
+    await expect(commitIt.execute()).resolves.toMatchSnapshot()
   })
 })

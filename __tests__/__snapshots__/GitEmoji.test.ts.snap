@@ -3,51 +3,955 @@
 exports[`GitEmoji areas required 1`] = `[Error: At least one area is required]`;
 
 exports[`GitEmoji askForShortDescription: false and commitBodyRequired: false 1`] = `
-"✅ ✔️ commit body goes here
+{
+  "commit": {
+    "body": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "commit body goes here
+
+**Intentions:**
+
+- ✅ - Adding a test
+- ✔️ - Make a test pass",
+      },
+    ],
+    "data": [],
+    "title": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "✅ ✔️ commit body goes here",
+      },
+    ],
+  },
+  "message": "✅ ✔️ commit body goes here
 
 commit body goes here
 
 **Intentions:**
 
-- ✅ Adding a test
-- ✔️ Make a test pass"
+- ✅ - Adding a test
+- ✔️ - Make a test pass",
+  "options": {
+    "dryRun": true,
+    "messageSeparator": "
+",
+    "plugins": [
+      GitEmoji {
+        "enquirer": {
+          "prompt": [Function],
+        },
+        "options": {
+          "areasRequired": false,
+          "askForShortDescription": false,
+          "commitBodyRequired": false,
+          "intentions": [
+            {
+              "description": "Initial commit",
+              "name": "🎉",
+            },
+            {
+              "description": "Version tag",
+              "name": "🔖",
+            },
+            {
+              "description": "New feature",
+              "name": "✨",
+            },
+            {
+              "description": "Bugfix",
+              "name": "🐛",
+            },
+            {
+              "description": "Metadata",
+              "name": "📇",
+            },
+            {
+              "description": "Documentation",
+              "name": "📚",
+            },
+            {
+              "description": "Documenting source code",
+              "name": "💡",
+            },
+            {
+              "description": "Performance",
+              "name": "🐎",
+            },
+            {
+              "description": "Cosmetic",
+              "name": "💄",
+            },
+            {
+              "description": "Tests",
+              "name": "🚨",
+            },
+            {
+              "description": "Adding a test",
+              "name": "✅",
+            },
+            {
+              "description": "Make a test pass",
+              "name": "✔️",
+            },
+            {
+              "description": "General update",
+              "name": "⚡",
+            },
+            {
+              "description": "Improve format/structure",
+              "name": "🎨",
+            },
+            {
+              "description": "Refactor code",
+              "name": "🔨",
+            },
+            {
+              "description": "Removing code/files",
+              "name": "🔥",
+            },
+            {
+              "description": "Continuous Integration",
+              "name": "💚",
+            },
+            {
+              "description": "Security",
+              "name": "🔒",
+            },
+            {
+              "description": "Upgrading dependencies",
+              "name": "⬆️",
+            },
+            {
+              "description": "Downgrading dependencies",
+              "name": "⬇️",
+            },
+            {
+              "description": "Lint",
+              "name": "👕",
+            },
+            {
+              "description": "Translation",
+              "name": "👽",
+            },
+            {
+              "description": "Text",
+              "name": "📝",
+            },
+            {
+              "description": "Critical hotfix",
+              "name": "🚑",
+            },
+            {
+              "description": "Deploying stuff",
+              "name": "🚀",
+            },
+            {
+              "description": "Fixing on MacOS",
+              "name": "🍎",
+            },
+            {
+              "description": "Fixing on Linux",
+              "name": "🐧",
+            },
+            {
+              "description": "Fixing on Windows",
+              "name": "🏁",
+            },
+            {
+              "description": "Work in progress",
+              "name": "🚧",
+            },
+            {
+              "description": "Adding CI build system",
+              "name": "👷",
+            },
+            {
+              "description": "Analytics or tracking code",
+              "name": "📈",
+            },
+            {
+              "description": "Removing a dependency",
+              "name": "➖",
+            },
+            {
+              "description": "Adding a dependency",
+              "name": "➕",
+            },
+            {
+              "description": "Docker",
+              "name": "🐳",
+            },
+            {
+              "description": "Configuration files",
+              "name": "🔧",
+            },
+            {
+              "description": "Package.json in JS",
+              "name": "📦",
+            },
+            {
+              "description": "Merging branches",
+              "name": "🔀",
+            },
+            {
+              "description": "Bad code / need improv.",
+              "name": "💩",
+            },
+            {
+              "description": "Reverting changes",
+              "name": "⏪",
+            },
+            {
+              "description": "Breaking changes",
+              "name": "💥",
+            },
+            {
+              "description": "Code review changes",
+              "name": "👌",
+            },
+            {
+              "description": "Accessibility",
+              "name": "♿",
+            },
+            {
+              "description": "Move/rename repository",
+              "name": "🚚",
+            },
+          ],
+          "multipleAreas": true,
+          "multipleIntentions": true,
+          "pluginId": "GitEmoji",
+          "sortAreas": [Function],
+          "titleSeparator": "",
+        },
+      },
+    ],
+    "titleSeparator": "|",
+  },
+}
 `;
 
 exports[`GitEmoji asks for a short description 1`] = `
-"✅ ✔️ short description of commit
+{
+  "commit": {
+    "body": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "commit body goes here
+
+**Intentions:**
+
+- ✅ - Adding a test
+- ✔️ - Make a test pass
+
+**Areas:**
+
+- short description of commit",
+      },
+    ],
+    "data": [],
+    "title": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "✅ ✔️ short description of commit",
+      },
+    ],
+  },
+  "message": "✅ ✔️ short description of commit
 
 commit body goes here
 
 **Intentions:**
 
-- ✅ Adding a test
-- ✔️ Make a test pass
+- ✅ - Adding a test
+- ✔️ - Make a test pass
 
 **Areas:**
 
-- short description of commit"
+- short description of commit",
+  "options": {
+    "dryRun": true,
+    "messageSeparator": "
+",
+    "plugins": [
+      GitEmoji {
+        "enquirer": {
+          "prompt": [Function],
+        },
+        "options": {
+          "areasRequired": false,
+          "askForShortDescription": true,
+          "commitBodyRequired": false,
+          "intentions": [
+            {
+              "description": "Initial commit",
+              "name": "🎉",
+            },
+            {
+              "description": "Version tag",
+              "name": "🔖",
+            },
+            {
+              "description": "New feature",
+              "name": "✨",
+            },
+            {
+              "description": "Bugfix",
+              "name": "🐛",
+            },
+            {
+              "description": "Metadata",
+              "name": "📇",
+            },
+            {
+              "description": "Documentation",
+              "name": "📚",
+            },
+            {
+              "description": "Documenting source code",
+              "name": "💡",
+            },
+            {
+              "description": "Performance",
+              "name": "🐎",
+            },
+            {
+              "description": "Cosmetic",
+              "name": "💄",
+            },
+            {
+              "description": "Tests",
+              "name": "🚨",
+            },
+            {
+              "description": "Adding a test",
+              "name": "✅",
+            },
+            {
+              "description": "Make a test pass",
+              "name": "✔️",
+            },
+            {
+              "description": "General update",
+              "name": "⚡",
+            },
+            {
+              "description": "Improve format/structure",
+              "name": "🎨",
+            },
+            {
+              "description": "Refactor code",
+              "name": "🔨",
+            },
+            {
+              "description": "Removing code/files",
+              "name": "🔥",
+            },
+            {
+              "description": "Continuous Integration",
+              "name": "💚",
+            },
+            {
+              "description": "Security",
+              "name": "🔒",
+            },
+            {
+              "description": "Upgrading dependencies",
+              "name": "⬆️",
+            },
+            {
+              "description": "Downgrading dependencies",
+              "name": "⬇️",
+            },
+            {
+              "description": "Lint",
+              "name": "👕",
+            },
+            {
+              "description": "Translation",
+              "name": "👽",
+            },
+            {
+              "description": "Text",
+              "name": "📝",
+            },
+            {
+              "description": "Critical hotfix",
+              "name": "🚑",
+            },
+            {
+              "description": "Deploying stuff",
+              "name": "🚀",
+            },
+            {
+              "description": "Fixing on MacOS",
+              "name": "🍎",
+            },
+            {
+              "description": "Fixing on Linux",
+              "name": "🐧",
+            },
+            {
+              "description": "Fixing on Windows",
+              "name": "🏁",
+            },
+            {
+              "description": "Work in progress",
+              "name": "🚧",
+            },
+            {
+              "description": "Adding CI build system",
+              "name": "👷",
+            },
+            {
+              "description": "Analytics or tracking code",
+              "name": "📈",
+            },
+            {
+              "description": "Removing a dependency",
+              "name": "➖",
+            },
+            {
+              "description": "Adding a dependency",
+              "name": "➕",
+            },
+            {
+              "description": "Docker",
+              "name": "🐳",
+            },
+            {
+              "description": "Configuration files",
+              "name": "🔧",
+            },
+            {
+              "description": "Package.json in JS",
+              "name": "📦",
+            },
+            {
+              "description": "Merging branches",
+              "name": "🔀",
+            },
+            {
+              "description": "Bad code / need improv.",
+              "name": "💩",
+            },
+            {
+              "description": "Reverting changes",
+              "name": "⏪",
+            },
+            {
+              "description": "Breaking changes",
+              "name": "💥",
+            },
+            {
+              "description": "Code review changes",
+              "name": "👌",
+            },
+            {
+              "description": "Accessibility",
+              "name": "♿",
+            },
+            {
+              "description": "Move/rename repository",
+              "name": "🚚",
+            },
+          ],
+          "multipleAreas": true,
+          "multipleIntentions": true,
+          "pluginId": "GitEmoji",
+          "sortAreas": [Function],
+          "titleSeparator": "",
+        },
+      },
+    ],
+    "titleSeparator": "|",
+  },
+}
 `;
 
 exports[`GitEmoji commit body required 1`] = `[Error: Commit body is required]`;
 
 exports[`GitEmoji commit with intentions, areas, and a body 1`] = `
-"✅ ✔️ Dashboard, User settings
+{
+  "commit": {
+    "body": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "Testing for certain things
+
+**Intentions:**
+
+- ✅ - Adding a test
+- ✔️ - Make a test pass
+
+**Areas:**
+
+- Dashboard
+- User settings",
+      },
+    ],
+    "data": [],
+    "title": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "✅ ✔️ Dashboard, User settings",
+      },
+    ],
+  },
+  "message": "✅ ✔️ Dashboard, User settings
 
 Testing for certain things
 
 **Intentions:**
 
-- ✅ Adding a test
-- ✔️ Make a test pass
+- ✅ - Adding a test
+- ✔️ - Make a test pass
 
 **Areas:**
 
 - Dashboard
-- User settings"
+- User settings",
+  "options": {
+    "dryRun": true,
+    "messageSeparator": "
+",
+    "plugins": [
+      GitEmoji {
+        "enquirer": {
+          "prompt": [Function],
+        },
+        "options": {
+          "areas": [
+            {
+              "name": "User settings",
+            },
+            {
+              "name": "Dashboard",
+            },
+          ],
+          "areasRequired": false,
+          "commitBodyRequired": true,
+          "intentions": [
+            {
+              "description": "Initial commit",
+              "name": "🎉",
+            },
+            {
+              "description": "Version tag",
+              "name": "🔖",
+            },
+            {
+              "description": "New feature",
+              "name": "✨",
+            },
+            {
+              "description": "Bugfix",
+              "name": "🐛",
+            },
+            {
+              "description": "Metadata",
+              "name": "📇",
+            },
+            {
+              "description": "Documentation",
+              "name": "📚",
+            },
+            {
+              "description": "Documenting source code",
+              "name": "💡",
+            },
+            {
+              "description": "Performance",
+              "name": "🐎",
+            },
+            {
+              "description": "Cosmetic",
+              "name": "💄",
+            },
+            {
+              "description": "Tests",
+              "name": "🚨",
+            },
+            {
+              "description": "Adding a test",
+              "name": "✅",
+            },
+            {
+              "description": "Make a test pass",
+              "name": "✔️",
+            },
+            {
+              "description": "General update",
+              "name": "⚡",
+            },
+            {
+              "description": "Improve format/structure",
+              "name": "🎨",
+            },
+            {
+              "description": "Refactor code",
+              "name": "🔨",
+            },
+            {
+              "description": "Removing code/files",
+              "name": "🔥",
+            },
+            {
+              "description": "Continuous Integration",
+              "name": "💚",
+            },
+            {
+              "description": "Security",
+              "name": "🔒",
+            },
+            {
+              "description": "Upgrading dependencies",
+              "name": "⬆️",
+            },
+            {
+              "description": "Downgrading dependencies",
+              "name": "⬇️",
+            },
+            {
+              "description": "Lint",
+              "name": "👕",
+            },
+            {
+              "description": "Translation",
+              "name": "👽",
+            },
+            {
+              "description": "Text",
+              "name": "📝",
+            },
+            {
+              "description": "Critical hotfix",
+              "name": "🚑",
+            },
+            {
+              "description": "Deploying stuff",
+              "name": "🚀",
+            },
+            {
+              "description": "Fixing on MacOS",
+              "name": "🍎",
+            },
+            {
+              "description": "Fixing on Linux",
+              "name": "🐧",
+            },
+            {
+              "description": "Fixing on Windows",
+              "name": "🏁",
+            },
+            {
+              "description": "Work in progress",
+              "name": "🚧",
+            },
+            {
+              "description": "Adding CI build system",
+              "name": "👷",
+            },
+            {
+              "description": "Analytics or tracking code",
+              "name": "📈",
+            },
+            {
+              "description": "Removing a dependency",
+              "name": "➖",
+            },
+            {
+              "description": "Adding a dependency",
+              "name": "➕",
+            },
+            {
+              "description": "Docker",
+              "name": "🐳",
+            },
+            {
+              "description": "Configuration files",
+              "name": "🔧",
+            },
+            {
+              "description": "Package.json in JS",
+              "name": "📦",
+            },
+            {
+              "description": "Merging branches",
+              "name": "🔀",
+            },
+            {
+              "description": "Bad code / need improv.",
+              "name": "💩",
+            },
+            {
+              "description": "Reverting changes",
+              "name": "⏪",
+            },
+            {
+              "description": "Breaking changes",
+              "name": "💥",
+            },
+            {
+              "description": "Code review changes",
+              "name": "👌",
+            },
+            {
+              "description": "Accessibility",
+              "name": "♿",
+            },
+            {
+              "description": "Move/rename repository",
+              "name": "🚚",
+            },
+          ],
+          "multipleAreas": true,
+          "multipleIntentions": true,
+          "pluginId": "GitEmoji",
+          "sortAreas": [Function],
+          "titleSeparator": "",
+        },
+      },
+    ],
+    "titleSeparator": "|",
+  },
+}
 `;
 
 exports[`GitEmoji custom title and body formatters 1`] = `
-"✅ Adding a test, ✔️ Make a test pass
+{
+  "commit": {
+    "body": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "Custom body",
+      },
+    ],
+    "data": [],
+    "title": [
+      {
+        "pluginAction": undefined,
+        "pluginId": "GitEmoji",
+        "text": "✅ - Adding a test, ✔️ - Make a test pass",
+      },
+    ],
+  },
+  "message": "✅ - Adding a test, ✔️ - Make a test pass
 
-Custom body"
+Custom body",
+  "options": {
+    "dryRun": true,
+    "messageSeparator": "
+",
+    "plugins": [
+      GitEmoji {
+        "enquirer": {
+          "prompt": [Function],
+        },
+        "options": {
+          "areas": [
+            {
+              "name": "User settings",
+            },
+            {
+              "name": "Dashboard",
+            },
+          ],
+          "areasRequired": false,
+          "commitBodyRequired": true,
+          "formatBody": [Function],
+          "formatTitle": [Function],
+          "intentions": [
+            {
+              "description": "Initial commit",
+              "name": "🎉",
+            },
+            {
+              "description": "Version tag",
+              "name": "🔖",
+            },
+            {
+              "description": "New feature",
+              "name": "✨",
+            },
+            {
+              "description": "Bugfix",
+              "name": "🐛",
+            },
+            {
+              "description": "Metadata",
+              "name": "📇",
+            },
+            {
+              "description": "Documentation",
+              "name": "📚",
+            },
+            {
+              "description": "Documenting source code",
+              "name": "💡",
+            },
+            {
+              "description": "Performance",
+              "name": "🐎",
+            },
+            {
+              "description": "Cosmetic",
+              "name": "💄",
+            },
+            {
+              "description": "Tests",
+              "name": "🚨",
+            },
+            {
+              "description": "Adding a test",
+              "name": "✅",
+            },
+            {
+              "description": "Make a test pass",
+              "name": "✔️",
+            },
+            {
+              "description": "General update",
+              "name": "⚡",
+            },
+            {
+              "description": "Improve format/structure",
+              "name": "🎨",
+            },
+            {
+              "description": "Refactor code",
+              "name": "🔨",
+            },
+            {
+              "description": "Removing code/files",
+              "name": "🔥",
+            },
+            {
+              "description": "Continuous Integration",
+              "name": "💚",
+            },
+            {
+              "description": "Security",
+              "name": "🔒",
+            },
+            {
+              "description": "Upgrading dependencies",
+              "name": "⬆️",
+            },
+            {
+              "description": "Downgrading dependencies",
+              "name": "⬇️",
+            },
+            {
+              "description": "Lint",
+              "name": "👕",
+            },
+            {
+              "description": "Translation",
+              "name": "👽",
+            },
+            {
+              "description": "Text",
+              "name": "📝",
+            },
+            {
+              "description": "Critical hotfix",
+              "name": "🚑",
+            },
+            {
+              "description": "Deploying stuff",
+              "name": "🚀",
+            },
+            {
+              "description": "Fixing on MacOS",
+              "name": "🍎",
+            },
+            {
+              "description": "Fixing on Linux",
+              "name": "🐧",
+            },
+            {
+              "description": "Fixing on Windows",
+              "name": "🏁",
+            },
+            {
+              "description": "Work in progress",
+              "name": "🚧",
+            },
+            {
+              "description": "Adding CI build system",
+              "name": "👷",
+            },
+            {
+              "description": "Analytics or tracking code",
+              "name": "📈",
+            },
+            {
+              "description": "Removing a dependency",
+              "name": "➖",
+            },
+            {
+              "description": "Adding a dependency",
+              "name": "➕",
+            },
+            {
+              "description": "Docker",
+              "name": "🐳",
+            },
+            {
+              "description": "Configuration files",
+              "name": "🔧",
+            },
+            {
+              "description": "Package.json in JS",
+              "name": "📦",
+            },
+            {
+              "description": "Merging branches",
+              "name": "🔀",
+            },
+            {
+              "description": "Bad code / need improv.",
+              "name": "💩",
+            },
+            {
+              "description": "Reverting changes",
+              "name": "⏪",
+            },
+            {
+              "description": "Breaking changes",
+              "name": "💥",
+            },
+            {
+              "description": "Code review changes",
+              "name": "👌",
+            },
+            {
+              "description": "Accessibility",
+              "name": "♿",
+            },
+            {
+              "description": "Move/rename repository",
+              "name": "🚚",
+            },
+          ],
+          "multipleAreas": true,
+          "multipleIntentions": true,
+          "pluginId": "GitEmoji",
+          "sortAreas": [Function],
+          "titleSeparator": "",
+        },
+      },
+    ],
+    "titleSeparator": "|",
+  },
+}
 `;

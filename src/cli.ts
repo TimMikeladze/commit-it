@@ -27,13 +27,11 @@ interface CommanderOptions {
 
   const am = new CommitIt(config)
 
-  am.initialize().then(async () => {
-    try {
-      await am.executePlugins()
-      process.exit(0)
-    } catch (err: any) {
-      console.error(err.message)
-      process.exit(1)
-    }
-  })
+  try {
+    await am.execute()
+    process.exit(0)
+  } catch (err: any) {
+    console.error(err.message)
+    process.exit(1)
+  }
 })()

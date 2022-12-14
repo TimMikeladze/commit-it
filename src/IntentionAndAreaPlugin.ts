@@ -9,7 +9,7 @@ import {
 export interface IntentionAndAreaPluginOptions extends PluginOptions {
   areas?: {
     description?: string
-    text: string
+    name: string
   }[]
   areasRequired?: boolean
   askForShortDescription?: boolean
@@ -21,13 +21,13 @@ export interface IntentionAndAreaPluginOptions extends PluginOptions {
     areas,
     intentions
   }: {
-    areas: { choice: string; description?: string; text: string }[]
+    areas: { choice: string; description?: string; name: string }[]
     bodyText: string
     commitBody: string
     intentions: {
       choice: string
       description?: string
-      text: string
+      name: string
     }[]
     shortDescription: string
   }) => string
@@ -38,35 +38,34 @@ export interface IntentionAndAreaPluginOptions extends PluginOptions {
     areas,
     intentions
   }: {
-    areas: { choice: string; description?: string; text: string }[]
+    areas: { choice: string; description?: string; name: string }[]
     commitBody: string
     intentions: {
       choice: string
       description?: string
-      text: string
+      name: string
     }[]
     shortDescription: string
     titleText: string
   }) => string
   intentions?: {
     description?: string
-    text: string
+    name: string
   }[]
   multipleAreas?: boolean
   multipleIntentions?: boolean
-  sortAreas?: (a: { description; text }, b: { description; text }) => number
+  sortAreas?: (a: { description; name }, b: { description; name }) => number
   sortIntentions?: (
-    a: { description; text },
-    b: { description; text }
+    a: { description; name },
+    b: { description; name }
   ) => number
   titleSeparator?: string
 }
 
-export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPluginOptions> {
-  constructor(
-    options?: IntentionAndAreaPluginOptions,
-    enquirer?: EnquirerInterface
-  ) {
+export class IntentionAndAreaPlugin<
+  T extends IntentionAndAreaPluginOptions = IntentionAndAreaPluginOptions
+> extends CommitItPlugin<T> {
+  constructor(options?: T, enquirer?: EnquirerInterface) {
     super(
       {
         pluginId: 'IntentionAndAreaPlugin',
@@ -97,10 +96,13 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
 
   public async run(options, commit: Commit): Promise<[any, any]> {
     let allIntentions = commit.data.intentions
-      .filter((x) => x?.text)
+      .filter((x) => x?.name)
       .map((x) => ({
         ...x,
-        choice: `${x.text || ''} ${x.description || ''}`.trim()
+        choice: [x.name, x.description]
+          .filter(Boolean)
+          .map((x) => x.trim())
+          .join(' - ')
       }))
 
     if (this.options.sortIntentions) {
@@ -109,10 +111,13 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
 
     let allAreas =
       commit.data.areas
-        ?.filter((x) => x?.text)
+        ?.filter((x) => x?.name)
         .map((x) => ({
           ...x,
-          choice: `${x.text || ''} ${x.description || ''}`.trim()
+          choice: [x.name, x.description]
+            .filter(Boolean)
+            .map((x) => x.trim())
+            .join(' - ')
         })) || []
 
     if (this.options.sortAreas) {
@@ -149,7 +154,7 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
         })
       ).selectedArea
         ?.map((x) => allAreas.find((y) => y.choice === x))
-        .sort((a, b) => a.text.localeCompare(b.text))
+        .sort((a, b) => a.name.localeCompare(b.name))
     }
 
     const noAreasSelected = !areas || !areas?.length
@@ -173,7 +178,7 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
       )?.shortDescription
 
       if (shortDescription) {
-        areas = [{ text: shortDescription }]
+        areas = [{ name: shortDescription }]
       }
     }
 
@@ -192,11 +197,11 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
     }
 
     const titleText =
-      intentions.map((x) => x.text).join(' ') +
+      intentions.map((x) => x.name).join(' ') +
       ' ' +
       (areas
         ? `${this.options.titleSeparator} ${areas
-            .map((x) => x.text)
+            .map((x) => x.name)
             .join(', ')}`.trim()
         : `${this.options.titleSeparator} ${commitBody}`
       ).trim()
@@ -225,7 +230,7 @@ export class IntentionAndAreaPlugin extends CommitItPlugin<IntentionAndAreaPlugi
       intentions?.length > 0 && '**Intentions:**',
       intentions?.map((x) => `- ${x.choice}`).join('\n') || '',
       areas?.length > 0 && '**Areas:**',
-      areas?.map((x) => `- ${x.text}`).join('\n') || ''
+      areas?.map((x) => `- ${x.name}`).join('\n') || ''
     ]
       .filter(Boolean)
       .join('\n\n')

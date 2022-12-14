@@ -32,11 +32,16 @@ export class CommitIt {
     }
   }
 
-  public async initialize(): Promise<void> {}
-
-  public async executePlugins(): Promise<string> {
+  public async execute(): Promise<{
+    commit: Commit
+    message: string
+    options: CommitItOptions
+  }> {
     const plugins: CommitItPlugin[] = this.options.plugins || [new GitEmoji()]
-    let options = this.options || {}
+    let options =
+      {
+        ...this.options
+      } || {}
     let commit: Commit = {
       data: []
     }
@@ -45,8 +50,12 @@ export class CommitIt {
       let result
       if (plugin.options.pluginAction !== 'run') {
         result = await plugin.load(options, commit)
-        options = result[0]
-        commit = result[1]
+        if (result?.[0]) {
+          options = result[0]
+        }
+        if (result?.[1]) {
+          commit = result[1]
+        }
       }
     }
 
@@ -54,9 +63,13 @@ export class CommitIt {
       let result
       if (plugin.options.pluginAction !== 'load') {
         result = await plugin.run(options, commit)
+        if (result?.[0]) {
+          options = result[0]
+        }
+        if (result?.[1]) {
+          commit = result[1]
+        }
       }
-      options = result[0]
-      commit = result[1]
     }
 
     const title = commit.title
@@ -84,6 +97,6 @@ export class CommitIt {
         .commit(message)
     }
 
-    return message
+    return { message, commit, options }
   }
 }

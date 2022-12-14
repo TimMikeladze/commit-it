@@ -12,6 +12,8 @@ jobs:
     strategy:
       matrix:
         node-version: [16.x]
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v3

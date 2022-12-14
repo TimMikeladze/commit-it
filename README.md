@@ -1,6 +1,6 @@
 # commit-it
 
-CLI tool to generate a pretty commit message and log. Easily customizable prompts with plugins. Integrates with Github issues and labels out of the box.
+CLI tool to generate a pretty commit message and log. Easily customizable prompts with plugins. Integrates with GitHub issues and labels out of the box.
 
 ## Install
 
@@ -13,4 +13,3 @@ pnpm add commit-it --dev
 ```
 
 ## Usage
-

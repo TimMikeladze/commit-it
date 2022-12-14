@@ -2,7 +2,7 @@ import Enquirer from 'enquirer'
 
 export interface PluginOptions {
   pluginAction?: 'load' | 'run'
-  pluginId: string
+  pluginId?: string
 }
 
 export interface CommitItOptions<T extends PluginOptions = PluginOptions> {

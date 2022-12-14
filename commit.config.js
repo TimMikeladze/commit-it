@@ -5,7 +5,7 @@ export default {
     new GitEmoji({
       areas: [
         {
-          text: 'CLI'
+          text: 'CLI commands'
         },
         {
           text: 'Plugins - Core'
