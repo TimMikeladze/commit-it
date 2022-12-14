@@ -48,7 +48,7 @@ export interface IntentionAndAreaPluginOptions extends PluginOptions {
     shortDescription: string
     titleText: string
   }) => string
-  intentions: {
+  intentions?: {
     description?: string
     text: string
   }[]
@@ -68,7 +68,13 @@ export class IntentionAndAreaPlugin extends CommitItPlugin {
     options?: IntentionAndAreaPluginOptions,
     enquirer?: EnquirerInterface
   ) {
-    super(options.pluginId, enquirer)
+    super(
+      {
+        pluginId: 'IntentionAndAreaPlugin',
+        ...options
+      },
+      enquirer
+    )
     this.options = {
       ...options
     }
@@ -208,7 +214,11 @@ export class IntentionAndAreaPlugin extends CommitItPlugin {
 
     commit.title = [
       ...(commit.title || []),
-      { plugin: this.name, text: formattedTitleText }
+      {
+        pluginId: this.pluginId,
+        pluginAction: this.pluginAction,
+        text: formattedTitleText
+      }
     ]
 
     const bodyText = [
@@ -235,7 +245,8 @@ export class IntentionAndAreaPlugin extends CommitItPlugin {
     commit.body = [
       ...(commit.body || []),
       {
-        plugin: this.name,
+        pluginId: this.pluginId,
+        pluginAction: this.pluginAction,
         text: formattedBodyText
       }
     ]

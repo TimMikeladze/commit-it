@@ -9,6 +9,7 @@ export interface CommitItOptions {
 }
 
 export interface PluginOptions {
+  pluginAction?: 'load' | 'run'
   pluginId: string
 }
 
@@ -22,10 +23,15 @@ export interface EnquirerInterface {
 }
 
 export abstract class CommitItPlugin {
-  public name: string
   public enquirer: EnquirerInterface
-  protected constructor(name: string, enquirer?: EnquirerInterface) {
-    this.name = name
+  public pluginId: string
+  public pluginAction?: 'load' | 'run'
+  protected constructor(
+    { pluginId, pluginAction }: PluginOptions,
+    enquirer?: EnquirerInterface
+  ) {
+    this.pluginId = pluginId
+    this.pluginAction = pluginAction
     if (enquirer) {
       this.enquirer = enquirer
     } else {
@@ -46,12 +52,14 @@ export abstract class CommitItPlugin {
 
 export interface Commit {
   body?: {
-    plugin: string
+    pluginAction?: 'load' | 'run'
+    pluginId: string
     text: string
   }[]
   data?: Record<string, any>
   title?: {
-    plugin: string
+    pluginAction?: 'load' | 'run'
+    pluginId: string
     text: string
   }[]
 }
