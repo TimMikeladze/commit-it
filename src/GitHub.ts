@@ -15,6 +15,16 @@ export const githubDefaultOptions: Partial<GitHubPluginOptions> = {
   pluginId: 'GitHub'
 }
 
+export interface Label {
+  color: string
+  default: boolean
+  description: string
+  id: number
+  name: string
+  node_id: string
+  url: string
+}
+
 export class GitHub extends IntentionAndAreaPlugin<GitHubPluginOptions> {
   private readonly octokit: Octokit
 
@@ -32,18 +42,26 @@ export class GitHub extends IntentionAndAreaPlugin<GitHubPluginOptions> {
     })
   }
 
-  public async fetchLabels(): Promise<
-    {
-      color: string
-      description?: string
-      name: string
-    }[]
-  > {
-    const labels = await this.octokit.issues.listLabelsForRepo({
-      owner: this.options.owner,
-      repo: this.options.repo
+  public static async fetchLabels({
+    owner,
+    repo,
+    auth,
+    octokit
+  }: {
+    auth?: any
+    octokit?: Octokit
+    owner: string
+    repo: string
+  }): Promise<Label[]> {
+    const _octokit =
+      octokit ||
+      new Octokit({
+        auth
+      })
+    const labels = await _octokit.issues.listLabelsForRepo({
+      owner,
+      repo
     })
-
     return labels.data
   }
 
@@ -59,7 +77,11 @@ export class GitHub extends IntentionAndAreaPlugin<GitHubPluginOptions> {
     commit.data.areas = [
       ...(commit.data.areas || []),
       ...(this.options.areas || []),
-      ...(await this.fetchLabels())
+      ...(await GitHub.fetchLabels({
+        owner: this.options.owner,
+        repo: this.options.repo,
+        octokit: this.octokit
+      }))
     ].filter(Boolean)
 
     return [config, commit]
