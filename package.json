@@ -28,7 +28,7 @@
     "commit": "yarn build -f modern && node dist/cli.modern.js",
     "build": "rm -rf dist && tsc && microbundle src/{index,cli}.ts --target node",
     "lint": "eslint --fix {src,__tests__}/**/*.ts && prettier --write .",
-    "test": "yarn node --experimental-vm-modules $(yarn bin jest) --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "prepublishOnly": "yarn lint && yarn test && yarn build",
     "release": "release-it"
   },
