@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import { GitEmoji } from './GitEmoji'
 import simpleGit from 'simple-git'
 import { Commit, CommitItOptions, CommitItPlugin } from './types'
+import url from 'node:url';
 
 export const DEFAULT_CONFIG_PATH = './commit.config.js'
 
@@ -26,7 +27,7 @@ export class CommitIt {
         plugins: [new GitEmoji()]
       }
     } else {
-      const importedConfig = await import(p)
+      const importedConfig = await import(url.pathToFileURL(p).toString())
 
       return importedConfig.default
     }
