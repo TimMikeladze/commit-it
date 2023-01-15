@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import { GitEmoji } from './GitEmoji'
 import simpleGit from 'simple-git'
 import { Commit, CommitItOptions, CommitItPlugin } from './types'
-import url from 'node:url';
+import url from 'node:url'
 
 export const DEFAULT_CONFIG_PATH = './commit.config.js'
 
