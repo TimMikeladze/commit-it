@@ -398,6 +398,250 @@ customRules: [
 ]
 ```
 
+### More Custom Rule Examples
+
+```typescript
+customRules: [
+  // Require GitHub issue reference
+  {
+    name: 'require-issue',
+    pattern: '#\\d+',
+    message: 'Must reference a GitHub issue (e.g., #123)',
+    level: 'error',
+    invert: false,
+  },
+
+  // Require Signed-off-by for DCO compliance
+  {
+    name: 'require-signoff',
+    pattern: 'Signed-off-by: .+ <.+@.+>',
+    message: 'Must include Signed-off-by line (use git commit -s)',
+    level: 'error',
+    invert: false,
+  },
+
+  // Block common typos and mistakes
+  {
+    name: 'no-typos',
+    pattern: '\\b(teh|taht|funciton|recieve)\\b',
+    message: 'Commit message contains common typos',
+    level: 'warning',
+    invert: true,
+  },
+
+  // Enforce present tense ("add" not "added")
+  {
+    name: 'present-tense',
+    pattern: '^\\w+\\([^)]*\\): (added|removed|fixed|updated|changed)',
+    message: 'Use present tense: "add" not "added"',
+    level: 'warning',
+    invert: true,
+  },
+
+  // Linear issue reference (e.g., ENG-123)
+  {
+    name: 'require-linear',
+    pattern: '[A-Z]{2,}-\\d+',
+    message: 'Must reference a Linear issue (e.g., ENG-123)',
+    level: 'error',
+    invert: false,
+  },
+
+  // Block merge commits
+  {
+    name: 'no-merge',
+    pattern: '^Merge (branch|pull request)',
+    message: 'Use rebase instead of merge commits',
+    level: 'error',
+    invert: true,
+  },
+
+  // Require semantic version for release commits
+  {
+    name: 'release-version',
+    pattern: '^chore\\(release\\): v?\\d+\\.\\d+\\.\\d+',
+    message: 'Release commits must include semver (e.g., chore(release): v1.2.3)',
+    level: 'error',
+    invert: false,
+    // Only applies when type is chore and scope is release
+    appliesTo: { type: 'chore', scope: 'release' },
+  },
+
+  // Warn on long subjects (stricter than default)
+  {
+    name: 'short-subject',
+    pattern: '^.{51,}',
+    message: 'Keep subject under 50 characters for better git log output',
+    level: 'warning',
+    invert: true,
+  },
+]
+```
+
+### Team-Specific Configurations
+
+**Open Source Project** — require DCO sign-off and issue references:
+
+```typescript
+validation: {
+  enabled: true,
+  customRules: [
+    {
+      name: 'require-signoff',
+      pattern: 'Signed-off-by: .+ <.+>',
+      message: 'DCO sign-off required. Use: git commit -s',
+      level: 'error',
+      invert: false,
+    },
+    {
+      name: 'require-issue',
+      pattern: '(#\\d+|fixes #\\d+|closes #\\d+)',
+      message: 'Reference a GitHub issue',
+      level: 'warning',
+      invert: false,
+    },
+  ],
+}
+```
+
+**Enterprise with JIRA** — strict ticket requirements:
+
+```typescript
+validation: {
+  enabled: true,
+  requireScope: true,
+  customRules: [
+    {
+      name: 'jira-ticket',
+      pattern: '[A-Z]+-\\d+',
+      message: 'Must include JIRA ticket (e.g., PROJ-123)',
+      level: 'error',
+      invert: false,
+    },
+  ],
+}
+```
+
+**Monorepo** — enforce package scopes:
+
+```typescript
+validation: {
+  enabled: true,
+  requireScope: true,
+  allowedScopes: ['core', 'cli', 'web', 'api', 'shared', 'docs'],
+  customRules: [
+    {
+      name: 'no-root-changes',
+      pattern: '^\\w+: ', // no scope
+      message: 'Monorepo commits must specify a package scope',
+      level: 'error',
+      invert: true,
+    },
+  ],
+}
+```
+
+---
+
+## Workflow Examples
+
+### Bug Fix from GitHub Issue
+
+```bash
+$ commit-it commit
+
+? Select commit type: fix
+? Search issues (number or keyword):
+    #142 - Dashboard loading slow on mobile
+    #139 - API rate limiting not working
+    #134 - OAuth state mismatch on mobile browsers
+    #127 - Users redirected to 404 after OAuth login
+
+# Type to filter, results update as you type
+? Search issues (number or keyword): oauth
+    #134 - OAuth state mismatch on mobile browsers
+  ✓ #127 - Users redirected to 404 after OAuth login
+
+? Select scope: auth
+? Commit message: handle OAuth callback URL correctly
+
+✓ Created commit: fix(auth): handle OAuth callback URL correctly
+
+Closes #127
+```
+
+### Feature with AI-Generated Message
+
+```bash
+# Stage changes, let AI analyze the diff
+$ git add src/api/users.ts src/api/users.test.ts
+$ commit-it commit --ai
+
+Analyzing diff...
+
+? AI suggested: feat(api): add user profile endpoints with avatar upload
+  Accept this message? Yes
+
+? Add detailed body? Yes
+? Body:
+  - GET /users/:id/profile
+  - PATCH /users/:id/profile
+  - POST /users/:id/avatar
+
+✓ Created commit: feat(api): add user profile endpoints with avatar upload
+```
+
+### Breaking Change with Co-Authors
+
+```bash
+$ commit-it commit --breaking --co-author alice --co-author bob
+
+? Select commit type: feat
+? Select scope: api
+? Commit message: redesign authentication flow
+
+? Describe breaking change:
+  JWT tokens now use RS256 instead of HS256.
+  All existing tokens will be invalidated.
+
+✓ Created commit: feat(api)!: redesign authentication flow
+
+BREAKING CHANGE: JWT tokens now use RS256 instead of HS256.
+All existing tokens will be invalidated.
+
+Co-authored-by: Alice Smith <alice@example.com>
+Co-authored-by: Bob Jones <bob@company.com>
+```
+
+### Amend Last Commit
+
+```bash
+# Forgot to add a file
+$ git add src/utils/helpers.ts
+$ commit-it commit --amend
+
+Previous commit: feat(utils): add string helpers
+
+? Select commit type: feat (from previous)
+? Select scope: utils (from previous)
+? Commit message: add string helpers (from previous)
+
+✓ Amended commit: feat(utils): add string helpers
+```
+
+### Quick Commit (No GitHub)
+
+```bash
+# Skip GitHub integration for faster local commits
+$ commit-it commit --no-github --all
+
+? Select commit type: chore
+? Select scope: deps
+? Commit message: update dependencies
+
+✓ Created commit: chore(deps): update dependencies
+```
+
 ---
 
 ## Scope Detection
