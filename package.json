@@ -1,60 +1,70 @@
 {
-  "name": "commit-it",
-  "version": "0.1.0",
-  "description": "cli tool to commit ",
-  "homepage": "https://github.com/TimMikeladze/commit-it#readme",
-  "bugs": {
-    "url": "https://github.com/TimMikeladze/commit-it/issues"
-  },
-  "license": "MIT",
-  "files": [
-    "dist"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TimMikeladze/commit-it.git"
-  },
-  "scripts": {
-    "build": "bunup",
-    "dev": "bunup --watch",
-    "postinstall": "bun simple-git-hooks",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "release": "bumpp --commit --push --tag",
-    "test": "bun test",
-    "test:coverage": "bun test --coverage",
-    "test:watch": "bun test --watch",
-    "type-check": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.3.10",
-    "@types/bun": "^1.3.5",
-    "bumpp": "^10.3.2",
-    "bunup": "^0.16.11",
-    "simple-git-hooks": "^2.13.1",
-    "typescript": "^5.9.3"
-  },
-  "peerDependencies": {
-    "typescript": ">=4.5.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  },
-  "type": "module",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
-    },
-    "./package.json": "./package.json"
-  },
-  "module": "./dist/index.js",
-  "simple-git-hooks": {
-    "pre-commit": "bun run lint && bun run type-check"
-  },
-  "types": "./dist/index.d.ts"
+	"name": "commit-it",
+	"version": "0.1.0",
+	"description": "cli tool to commit ",
+	"bin": {
+		"commit-it": "./dist/cli.js",
+		"cit": "./dist/cli.js"
+	},
+	"homepage": "https://github.com/TimMikeladze/commit-it#readme",
+	"bugs": {
+		"url": "https://github.com/TimMikeladze/commit-it/issues"
+	},
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/TimMikeladze/commit-it.git"
+	},
+	"scripts": {
+		"build": "bunup",
+		"dev": "bunup --watch",
+		"postinstall": "bun simple-git-hooks",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"release": "bumpp --commit --push --tag",
+		"test": "bun test",
+		"test:coverage": "bun test --coverage",
+		"test:watch": "bun test --watch",
+		"type-check": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.10",
+		"@types/bun": "^1.3.5",
+		"bumpp": "^10.3.2",
+		"bunup": "^0.16.11",
+		"simple-git-hooks": "^2.13.1",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {
+		"typescript": ">=4.5.0"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"module": "./dist/index.js",
+	"simple-git-hooks": {
+		"pre-commit": "bun run lint && bun run type-check"
+	},
+	"types": "./dist/index.d.ts",
+	"dependencies": {
+		"@clack/prompts": "^0.11.0",
+		"@drizzle-team/brocli": "^0.11.0",
+		"simple-git": "^3.30.0",
+		"zod": "^4.2.1"
+	}
 }
