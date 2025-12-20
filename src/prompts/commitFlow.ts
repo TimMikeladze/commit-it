@@ -2,7 +2,7 @@ import { confirm, isCancel, select, text } from '@clack/prompts'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import { FormatValidator } from '../services/format'
-import { GitService } from '../services/git'
+import { GitService, type IssueReference } from '../services/git'
 import { GitHubService } from '../services/github'
 
 export interface InteractiveOptions {
@@ -16,6 +16,17 @@ export interface CommitResult {
 	hash: string
 }
 
+const ISSUE_ACTIONS = [
+	{ value: 'Closes', label: 'Closes', desc: 'Auto-close issue when merged' },
+	{ value: 'Fixes', label: 'Fixes', desc: 'Auto-close issue when merged' },
+	{
+		value: 'Resolves',
+		label: 'Resolves',
+		desc: 'Auto-close issue when merged',
+	},
+	{ value: 'Ref', label: 'Ref', desc: 'Just mention (no auto-close)' },
+] as const
+
 export async function interactiveCommit(
 	options: InteractiveOptions,
 ): Promise<CommitResult> {
@@ -26,7 +37,7 @@ export async function interactiveCommit(
 
 	// Initialize services
 	const github = new GitHubService(
-		!options.skipGithub && (config?.github?.enabled !== false),
+		!options.skipGithub && config?.github?.enabled !== false,
 	)
 	const git = new GitService()
 
@@ -41,8 +52,7 @@ export async function interactiveCommit(
 			value: t.value,
 			label: `${t.value.padEnd(10)} ${t.desc}`,
 		})),
-		initialValue:
-			context.suggestedType || availableTypes[0]?.value || 'feat',
+		initialValue: context.suggestedType || availableTypes[0]?.value || 'feat',
 	})
 
 	if (isCancel(type)) {
@@ -68,18 +78,18 @@ export async function interactiveCommit(
 		scope = selectedScope
 	}
 
-	// 3. Search/select issue
-	let issueNumber: number | undefined
-	const searchIssue = await confirm({
+	// 3. Search/select issues (supports multiple)
+	const issueRefs: IssueReference[] = []
+	let addMoreIssues = await confirm({
 		message: 'Reference a GitHub issue?',
 		initialValue: config?.github?.auto?.detectIssues !== false,
 	})
 
-	if (isCancel(searchIssue)) {
+	if (isCancel(addMoreIssues)) {
 		throw new Error('Cancelled')
 	}
 
-	if (searchIssue) {
+	while (addMoreIssues) {
 		const issueQuery = await text({
 			message: 'Search issues (number or keyword)',
 			placeholder: '123 or "login bug"',
@@ -102,12 +112,43 @@ export async function interactiveCommit(
 					})
 
 					if (!isCancel(selectedIssue)) {
-						issueNumber = selectedIssue as number
+						// Ask for action keyword
+						const action = await select({
+							message: 'How should this issue be referenced?',
+							options: ISSUE_ACTIONS.map((a) => ({
+								value: a.value,
+								label: `${a.label.padEnd(10)} ${a.desc}`,
+							})),
+							initialValue: 'Closes',
+						})
+
+						if (!isCancel(action)) {
+							const issue = issues.find((i) => i.number === selectedIssue)
+							issueRefs.push({
+								action: action as IssueReference['action'],
+								number: selectedIssue as number,
+								title: issue?.title,
+							})
+						}
 					}
 				}
 			} catch {
 				// Silently continue if issue search fails
 			}
+		}
+
+		// Ask if they want to add another issue
+		if (issueRefs.length > 0) {
+			const another = await confirm({
+				message: 'Add another issue reference?',
+				initialValue: false,
+			})
+			if (isCancel(another)) {
+				throw new Error('Cancelled')
+			}
+			addMoreIssues = another
+		} else {
+			addMoreIssues = false
 		}
 	}
 
@@ -149,7 +190,14 @@ export async function interactiveCommit(
 	if (scope) fullMessage += `(${scope})`
 	fullMessage += `: ${message}`
 	if (body) fullMessage += `\n\n${body}`
-	if (issueNumber) fullMessage += `\n\nCloses #${issueNumber}`
+
+	// Format issue references
+	if (issueRefs.length > 0) {
+		const issueFooter = issueRefs
+			.map((ref) => `${ref.action} #${ref.number}`)
+			.join('\n')
+		fullMessage += `\n\n${issueFooter}`
+	}
 
 	console.log('\n📝 Commit preview:\n')
 	console.log(fullMessage)
@@ -174,7 +222,7 @@ export async function interactiveCommit(
 		scope: scope || undefined,
 		message,
 		body: body || undefined,
-		issue: issueNumber,
+		issueRefs,
 		dryRun: options.dryRun,
 	})
 

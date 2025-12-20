@@ -1,15 +1,15 @@
 {
-  "preset": "conventional",
-  "defaults": {
-    "scope": "core",
-    "includeBody": true
-  },
-  "plugins": [],
-  "github": {
-    "enabled": true,
-    "auto": {
-      "detectIssues": true,
-      "suggestReviewers": true
-    }
-  }
+	"preset": "conventional",
+	"defaults": {
+		"scope": "core",
+		"includeBody": true
+	},
+	"plugins": [],
+	"github": {
+		"enabled": true,
+		"auto": {
+			"detectIssues": true,
+			"suggestReviewers": true
+		}
+	}
 }

@@ -1,13 +1,13 @@
 {
-  "preset": "gitmoji",
-  "defaults": {
-    "includeBody": true
-  },
-  "github": {
-    "enabled": true,
-    "auto": {
-      "detectIssues": true,
-      "suggestReviewers": false
-    }
-  }
+	"preset": "gitmoji",
+	"defaults": {
+		"includeBody": true
+	},
+	"github": {
+		"enabled": true,
+		"auto": {
+			"detectIssues": true,
+			"suggestReviewers": false
+		}
+	}
 }

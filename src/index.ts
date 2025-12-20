@@ -9,7 +9,11 @@ export type {
 	ValidationResult,
 } from './services/format'
 export { FormatValidator } from './services/format'
-export type { CommitOptions, CommitResult } from './services/git'
+export type {
+	CommitOptions,
+	CommitResult,
+	IssueReference,
+} from './services/git'
 export { createCommit, GitService } from './services/git'
 // Re-export types
 export type { CommitContext } from './services/github'

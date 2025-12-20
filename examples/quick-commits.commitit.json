@@ -1,14 +1,14 @@
 {
-  "preset": "conventional",
-  "defaults": {
-    "scope": "",
-    "includeBody": false
-  },
-  "github": {
-    "enabled": true,
-    "auto": {
-      "detectIssues": false,
-      "suggestReviewers": false
-    }
-  }
+	"preset": "conventional",
+	"defaults": {
+		"scope": "",
+		"includeBody": false
+	},
+	"github": {
+		"enabled": true,
+		"auto": {
+			"detectIssues": false,
+			"suggestReviewers": false
+		}
+	}
 }

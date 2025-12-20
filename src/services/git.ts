@@ -5,12 +5,19 @@ export interface CommitResult {
 	message: string
 }
 
+export interface IssueReference {
+	action: 'Closes' | 'Fixes' | 'Resolves' | 'Ref'
+	number: number
+	title?: string
+}
+
 export interface CommitOptions {
 	type: string
 	scope?: string
 	message: string
 	body?: string
-	issue?: number
+	issue?: number // deprecated, use issueRefs
+	issueRefs?: IssueReference[]
 	dryRun?: boolean
 	stage?: boolean
 }
@@ -65,7 +72,14 @@ export class GitService {
 			message += `\n\n${options.body}`
 		}
 
-		if (options.issue) {
+		// Handle issue references (new format)
+		if (options.issueRefs && options.issueRefs.length > 0) {
+			const issueFooter = options.issueRefs
+				.map((ref) => `${ref.action} #${ref.number}`)
+				.join('\n')
+			message += `\n\n${issueFooter}`
+		} else if (options.issue) {
+			// Legacy support for single issue
 			message += `\n\nCloses #${options.issue}`
 		}
 
