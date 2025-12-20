@@ -1,15 +1,32 @@
-import { confirm, isCancel, select, text } from '@clack/prompts'
+import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
+import { generateCommitMessage, isAIAvailable } from '../services/ai'
+import {
+	type CoAuthor,
+	formatCoAuthor,
+	getAllCoAuthors,
+	parseCoAuthor,
+} from '../services/coauthor'
 import { FormatValidator } from '../services/format'
 import { GitService, type IssueReference } from '../services/git'
 import { GitHubService } from '../services/github'
+import { getAllScopeSuggestions } from '../services/scope'
+import {
+	formatValidationResult,
+	getDefaultValidationConfig,
+	validateCommitMessage,
+} from '../services/validation'
 
 export interface InteractiveOptions {
 	preset?: string
 	skipGithub?: boolean
 	dryRun?: boolean
 	stageAll?: boolean
+	amend?: boolean
+	breaking?: boolean
+	useAI?: boolean
+	coAuthor?: string
 }
 
 export interface CommitResult {
@@ -44,6 +61,69 @@ export async function interactiveCommit(
 	// Get GitHub context
 	const context = await github.detectContext()
 
+	// Get changed files for scope suggestions
+	const changedFiles = await git.getChangedFiles()
+	const labelPatterns = config?.github?.scopeLabelPatterns || [
+		'scope:',
+		'scope/',
+		'area:',
+		'area/',
+	]
+	const scopeSuggestions = getAllScopeSuggestions(
+		changedFiles,
+		config?.scopeMap,
+		context.prLabels || [],
+		labelPatterns,
+	)
+
+	// If amending, load last commit data
+	let lastCommit = null
+	if (options.amend) {
+		lastCommit = await git.getLastCommit()
+		if (!lastCommit) {
+			throw new Error('No previous commit to amend')
+		}
+		console.log(`\n📝 Amending commit: ${lastCommit.hash.slice(0, 7)}`)
+		console.log(`   ${lastCommit.fullMessage.split('\n')[0]}\n`)
+	}
+
+	// AI generation (if requested)
+	let aiSuggestion = null
+	if (options.useAI && isAIAvailable(config)) {
+		console.log('🤖 Generating commit message with AI...\n')
+		const diff = await git.getStagedDiff()
+		if (diff) {
+			const types = validator.getAvailableTypes().map((t) => t.value)
+			aiSuggestion = await generateCommitMessage(diff, config, {
+				branchName: await git.getBranchName(),
+				existingTypes: types,
+			})
+			if (aiSuggestion) {
+				console.log('✨ AI suggestion:')
+				console.log(
+					`   ${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`,
+				)
+				if (aiSuggestion.body) {
+					console.log(`   ${aiSuggestion.body.split('\n')[0]}...`)
+				}
+				console.log()
+
+				const useAI = await confirm({
+					message: 'Use this AI-generated message?',
+					initialValue: true,
+				})
+
+				if (isCancel(useAI)) {
+					throw new Error('Cancelled')
+				}
+
+				if (!useAI) {
+					aiSuggestion = null // User declined, proceed manually
+				}
+			}
+		}
+	}
+
 	// 1. Select commit type
 	const availableTypes = validator.getAvailableTypes()
 	const type = await select({
@@ -52,24 +132,65 @@ export async function interactiveCommit(
 			value: t.value,
 			label: `${t.value.padEnd(10)} ${t.desc}`,
 		})),
-		initialValue: context.suggestedType || availableTypes[0]?.value || 'feat',
+		initialValue:
+			aiSuggestion?.type ||
+			lastCommit?.type ||
+			context.suggestedType ||
+			availableTypes[0]?.value ||
+			'feat',
 	})
 
 	if (isCancel(type)) {
 		throw new Error('Cancelled')
 	}
 
-	// 2. Select scope (optional)
-	const scopes = validator.getAvailableScopes()
+	// 2. Select scope with hybrid suggestions
 	let scope = ''
-	if (scopes.length > 0) {
+	const presetScopes = validator.getAvailableScopes()
+
+	// Build scope options from multiple sources
+	const scopeOptions: Array<{ value: string; label: string }> = [
+		{ value: '', label: '(none)' },
+	]
+
+	// Add AI/last commit scope first if available
+	const suggestedScope = aiSuggestion?.scope || lastCommit?.scope
+	if (
+		suggestedScope &&
+		!scopeSuggestions.find((s) => s.value === suggestedScope)
+	) {
+		scopeOptions.push({
+			value: suggestedScope,
+			label: `${suggestedScope} (suggested)`,
+		})
+	}
+
+	// Add hybrid scope suggestions
+	for (const suggestion of scopeSuggestions) {
+		const sourceLabel =
+			suggestion.source === 'config'
+				? 'config'
+				: suggestion.source === 'label'
+					? `label: ${suggestion.label}`
+					: 'path'
+		scopeOptions.push({
+			value: suggestion.value,
+			label: `${suggestion.value} (${sourceLabel})`,
+		})
+	}
+
+	// Add preset scopes
+	for (const s of presetScopes) {
+		if (!scopeOptions.find((o) => o.value === s)) {
+			scopeOptions.push({ value: s, label: s })
+		}
+	}
+
+	if (scopeOptions.length > 1) {
 		const selectedScope = await select({
 			message: 'Select scope (or skip)',
-			options: [
-				{ value: '', label: '(none)' },
-				...scopes.map((s) => ({ value: s, label: s })),
-			],
-			initialValue: config?.defaults?.scope || '',
+			options: scopeOptions,
+			initialValue: suggestedScope || config?.defaults?.scope || '',
 		})
 
 		if (isCancel(selectedScope)) {
@@ -78,7 +199,26 @@ export async function interactiveCommit(
 		scope = selectedScope
 	}
 
-	// 3. Search/select issues (supports multiple)
+	// 3. Breaking change
+	let breakingDescription = ''
+	const isBreaking = options.breaking || lastCommit?.isBreaking
+
+	if (isBreaking) {
+		const breakingInput = await text({
+			message: 'Describe the breaking change',
+			placeholder: 'What breaks and how to migrate',
+			initialValue: lastCommit?.breaking || '',
+			validate: (val) =>
+				val.length > 0 ? undefined : 'Breaking change description required',
+		})
+
+		if (isCancel(breakingInput)) {
+			throw new Error('Cancelled')
+		}
+		breakingDescription = breakingInput
+	}
+
+	// 4. Search/select issues (supports multiple)
 	const issueRefs: IssueReference[] = []
 	let addMoreIssues = await confirm({
 		message: 'Reference a GitHub issue?',
@@ -152,10 +292,11 @@ export async function interactiveCommit(
 		}
 	}
 
-	// 4. Enter commit message
+	// 5. Enter commit message
 	const message = await text({
 		message: 'Commit message',
 		placeholder: 'Concise description of changes',
+		initialValue: aiSuggestion?.message || lastCommit?.message || '',
 		validate: (val) => (val.length > 0 ? undefined : 'Message cannot be empty'),
 	})
 
@@ -163,11 +304,14 @@ export async function interactiveCommit(
 		throw new Error('Cancelled')
 	}
 
-	// 5. Add body (optional)
+	// 6. Add body (optional)
 	let body = ''
 	const addBody = await confirm({
 		message: 'Add detailed body?',
-		initialValue: config?.defaults?.includeBody !== false,
+		initialValue:
+			config?.defaults?.includeBody !== false ||
+			!!aiSuggestion?.body ||
+			!!lastCommit?.body,
 	})
 
 	if (isCancel(addBody)) {
@@ -178,6 +322,7 @@ export async function interactiveCommit(
 		const bodyText = await text({
 			message: 'Body (details, motivation, etc.)',
 			placeholder: 'Optional detailed description',
+			initialValue: aiSuggestion?.body || lastCommit?.body || '',
 		})
 
 		if (!isCancel(bodyText)) {
@@ -185,11 +330,88 @@ export async function interactiveCommit(
 		}
 	}
 
-	// 6. Preview and confirm
+	// 7. Co-authors
+	const selectedCoAuthors: CoAuthor[] = []
+
+	// Handle CLI co-author flag
+	if (options.coAuthor) {
+		const configCoAuthors = config?.coauthors || {}
+		if (configCoAuthors[options.coAuthor]) {
+			const parsed = parseCoAuthor(configCoAuthors[options.coAuthor])
+			if (parsed) {
+				selectedCoAuthors.push({
+					...parsed,
+					alias: options.coAuthor,
+					source: 'config',
+				})
+			}
+		} else {
+			const parsed = parseCoAuthor(options.coAuthor)
+			if (parsed) {
+				selectedCoAuthors.push(parsed)
+			}
+		}
+	}
+
+	// Interactive co-author selection
+	const addCoAuthors = await confirm({
+		message: 'Add co-authors?',
+		initialValue: false,
+	})
+
+	if (!isCancel(addCoAuthors) && addCoAuthors) {
+		const availableCoAuthors = await getAllCoAuthors(
+			config?.coauthors,
+			!options.skipGithub,
+		)
+
+		if (availableCoAuthors.length > 0) {
+			const selected = await multiselect({
+				message: 'Select co-authors',
+				options: availableCoAuthors.map((ca) => ({
+					value: ca,
+					label: `${ca.name} <${ca.email}>${ca.alias ? ` (${ca.alias})` : ''}`,
+				})),
+				required: false,
+			})
+
+			if (!isCancel(selected)) {
+				selectedCoAuthors.push(...(selected as CoAuthor[]))
+			}
+		}
+
+		// Allow manual entry
+		const addManual = await confirm({
+			message: 'Add co-author manually?',
+			initialValue: availableCoAuthors.length === 0,
+		})
+
+		if (!isCancel(addManual) && addManual) {
+			const manualInput = await text({
+				message: 'Enter co-author',
+				placeholder: 'Name <email@example.com>',
+			})
+
+			if (!isCancel(manualInput) && manualInput) {
+				const parsed = parseCoAuthor(manualInput)
+				if (parsed) {
+					selectedCoAuthors.push(parsed)
+				}
+			}
+		}
+	}
+
+	// 8. Preview and confirm
 	let fullMessage = `${type}`
 	if (scope) fullMessage += `(${scope})`
+	if (breakingDescription) fullMessage += '!'
 	fullMessage += `: ${message}`
+
 	if (body) fullMessage += `\n\n${body}`
+
+	if (breakingDescription) {
+		fullMessage += `\n\nBREAKING CHANGE: ${breakingDescription}`
+	}
 
 	// Format issue references
 	if (issueRefs.length > 0) {
@@ -199,12 +421,46 @@ export async function interactiveCommit(
 		fullMessage += `\n\n${issueFooter}`
 	}
 
+	// Format co-authors
+	if (selectedCoAuthors.length > 0) {
+		const coauthorFooter = selectedCoAuthors.map(formatCoAuthor).join('\n')
+		fullMessage += `\n\n${coauthorFooter}`
+	}
+
 	console.log('\n📝 Commit preview:\n')
 	console.log(fullMessage)
 	console.log()
 
+	// Validate commit message
+	const validationConfig = config?.validation || getDefaultValidationConfig()
+	if (validationConfig.enabled) {
+		const validationResult = validateCommitMessage(
+			fullMessage,
+			validationConfig,
+		)
+
+		if (!validationResult.valid) {
+			console.log('❌ Validation failed:\n')
+			console.log(formatValidationResult(validationResult))
+			console.log()
+
+			const continueAnyway = await confirm({
+				message: 'Continue with invalid commit message?',
+				initialValue: false,
+			})
+
+			if (isCancel(continueAnyway) || !continueAnyway) {
+				throw new Error('Cancelled')
+			}
+		} else if (validationResult.warnings.length > 0) {
+			console.log('⚠️  Validation warnings:\n')
+			console.log(formatValidationResult(validationResult))
+			console.log()
+		}
+	}
+
 	const confirmed = await confirm({
-		message: 'Create commit?',
+		message: options.amend ? 'Amend commit?' : 'Create commit?',
 		initialValue: true,
 	})
 
@@ -212,7 +468,7 @@ export async function interactiveCommit(
 		throw new Error('Cancelled')
 	}
 
-	// 7. Create commit
+	// 9. Create commit
 	if (options.stageAll) {
 		await git.stageAll()
 	}
@@ -222,8 +478,11 @@ export async function interactiveCommit(
 		scope: scope || undefined,
 		message,
 		body: body || undefined,
+		breaking: breakingDescription || undefined,
+		coauthors: selectedCoAuthors.map(formatCoAuthor),
 		issueRefs,
 		dryRun: options.dryRun,
+		amend: options.amend,
 	})
 
 	return result

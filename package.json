@@ -62,8 +62,13 @@
 	},
 	"types": "./dist/index.d.ts",
 	"dependencies": {
+		"@ai-sdk/anthropic": "^2.0.56",
+		"@ai-sdk/openai": "^2.0.88",
 		"@clack/prompts": "^0.11.0",
 		"@drizzle-team/brocli": "^0.11.0",
+		"ai": "^5.0.116",
+		"c12": "^3.3.3",
+		"micromatch": "^4.0.8",
 		"simple-git": "^3.30.0",
 		"zod": "^4.2.1"
 	}

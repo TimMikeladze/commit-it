@@ -19,6 +19,7 @@ export interface CommitContext {
 	relatedIssues: Issue[]
 	suggestedType?: string
 	suggestedReviewers?: string[]
+	prLabels?: string[]
 }
 
 export class GitHubService {
@@ -162,6 +163,7 @@ export class GitHubService {
 
 			// Suggest type based on labels
 			if (context.currentPR?.labels) {
+				context.prLabels = context.currentPR.labels
 				if (context.currentPR.labels.includes('bug')) {
 					context.suggestedType = 'fix'
 				} else if (context.currentPR.labels.includes('feature')) {
@@ -175,5 +177,44 @@ export class GitHubService {
 		}
 
 		return context
+	}
+
+	/**
+	 * Slugify a string for use in branch names
+	 */
+	slugify(input: string): string {
+		return input
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[^a-zA-Z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '')
+			.toLowerCase()
+	}
+
+	/**
+	 * Create a branch name from issue numbers and titles
+	 */
+	async createBranchName(
+		issueNumbers: number[],
+		postfix?: string,
+	): Promise<string> {
+		const sorted = [...issueNumbers].sort((a, b) => a - b)
+		const titles: string[] = []
+
+		for (const num of sorted) {
+			const issue = await this.getIssue(num)
+			if (issue) {
+				titles.push(issue.title)
+			}
+		}
+
+		const issueNames = titles.join(' and ')
+		let branch = this.slugify(`${sorted.join('-')} ${issueNames}`)
+
+		if (postfix) {
+			branch += `-${this.slugify(postfix)}`
+		}
+
+		return branch.replace(/-$/, '')
 	}
 }
