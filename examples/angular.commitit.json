@@ -1,0 +1,14 @@
+{
+  "preset": "angular",
+  "defaults": {
+    "scope": "ui",
+    "includeBody": false
+  },
+  "github": {
+    "enabled": true,
+    "auto": {
+      "detectIssues": true,
+      "suggestReviewers": false
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "preset": "conventional",
+  "defaults": {
+    "scope": "",
+    "includeBody": false
+  },
+  "github": {
+    "enabled": false
+  }
+}
