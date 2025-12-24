@@ -1,9 +1,11 @@
 import micromatch from 'micromatch'
+import type { Label } from './github'
 
 export interface ScopeSuggestion {
 	value: string
 	source: 'config' | 'label' | 'path'
 	label?: string
+	color?: string // hex color for label-sourced scopes
 }
 
 /**
@@ -38,20 +40,21 @@ export function getScopesFromConfig(
  * Extract scope from GitHub labels matching patterns like scope:api, area/auth
  */
 export function getScopesFromLabels(
-	labels: string[],
+	labels: Label[],
 	patterns: string[],
 ): ScopeSuggestion[] {
 	const scopes: ScopeSuggestion[] = []
 
 	for (const label of labels) {
 		for (const pattern of patterns) {
-			if (label.startsWith(pattern)) {
-				const scope = label.slice(pattern.length)
+			if (label.name.startsWith(pattern)) {
+				const scope = label.name.slice(pattern.length)
 				if (scope) {
 					scopes.push({
 						value: scope,
 						source: 'label',
-						label: label,
+						label: label.name,
+						color: label.color,
 					})
 				}
 			}
@@ -110,7 +113,7 @@ export function getScopesFromPaths(changedFiles: string[]): ScopeSuggestion[] {
 export function getAllScopeSuggestions(
 	changedFiles: string[],
 	scopeMap: Record<string, string> | undefined,
-	labels: string[],
+	labels: Label[],
 	labelPatterns: string[],
 ): ScopeSuggestion[] {
 	const configScopes = getScopesFromConfig(changedFiles, scopeMap)

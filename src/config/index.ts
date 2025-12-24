@@ -26,6 +26,9 @@ const ValidationSchema = z.object({
 const ConfigSchema: z.ZodType = z.object({
 	preset: z.string().default('conventional'),
 	template: z.string().optional(),
+	scopeMode: z
+		.enum(['single', 'multi-inline', 'multi-body'])
+		.default('single'),
 	defaults: z
 		.object({
 			scope: z.string().optional(),
@@ -120,6 +123,7 @@ export function getDefaultConfig(): Config {
 	return {
 		preset: 'conventional',
 		template: undefined,
+		scopeMode: 'single',
 		defaults: {
 			scope: '',
 			includeBody: true,

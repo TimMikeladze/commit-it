@@ -1,16 +1,52 @@
 import { execFileThrow } from '../utils/execFileNoThrow'
 
+export interface Label {
+	name: string
+	color: string // hex color without #
+}
+
+/**
+ * Convert hex color to ANSI 256-color code for terminal display
+ */
+export function hexToAnsi(hex: string): number {
+	// Remove # if present
+	hex = hex.replace('#', '')
+
+	const r = Number.parseInt(hex.slice(0, 2), 16)
+	const g = Number.parseInt(hex.slice(2, 4), 16)
+	const b = Number.parseInt(hex.slice(4, 6), 16)
+
+	// Convert to 256-color palette (16-231 are a 6x6x6 color cube)
+	const toLevel = (v: number) => Math.round(v / 255 * 5)
+	return 16 + 36 * toLevel(r) + 6 * toLevel(g) + toLevel(b)
+}
+
+/**
+ * Format text with background color using ANSI escape codes
+ */
+export function formatLabelColor(text: string, hexColor: string): string {
+	const ansiCode = hexToAnsi(hexColor)
+	// Use bright foreground for dark backgrounds, dark for light
+	const r = Number.parseInt(hexColor.slice(0, 2), 16)
+	const g = Number.parseInt(hexColor.slice(2, 4), 16)
+	const b = Number.parseInt(hexColor.slice(4, 6), 16)
+	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+	const fgCode = luminance > 0.5 ? 0 : 15 // black or white text
+
+	return `\x1b[48;5;${ansiCode}m\x1b[38;5;${fgCode}m ${text} \x1b[0m`
+}
+
 export interface Issue {
 	number: number
 	title: string
-	labels: string[]
+	labels: Label[]
 	state: 'open' | 'closed'
 }
 
 export interface PullRequest {
 	number: number
 	title: string
-	labels: string[]
+	labels: Label[]
 	state: 'open' | 'closed'
 }
 
@@ -19,7 +55,7 @@ export interface CommitContext {
 	relatedIssues: Issue[]
 	suggestedType?: string
 	suggestedReviewers?: string[]
-	prLabels?: string[]
+	prLabels?: Label[]
 }
 
 export class GitHubService {
@@ -164,11 +200,12 @@ export class GitHubService {
 			// Suggest type based on labels
 			if (context.currentPR?.labels) {
 				context.prLabels = context.currentPR.labels
-				if (context.currentPR.labels.includes('bug')) {
+				const labelNames = context.currentPR.labels.map((l) => l.name)
+				if (labelNames.includes('bug')) {
 					context.suggestedType = 'fix'
-				} else if (context.currentPR.labels.includes('feature')) {
+				} else if (labelNames.includes('feature')) {
 					context.suggestedType = 'feat'
-				} else if (context.currentPR.labels.includes('docs')) {
+				} else if (labelNames.includes('docs')) {
 					context.suggestedType = 'docs'
 				}
 			}

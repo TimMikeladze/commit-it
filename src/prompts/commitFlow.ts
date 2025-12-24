@@ -10,7 +10,7 @@ import {
 } from '../services/coauthor'
 import { FormatValidator } from '../services/format'
 import { GitService, type IssueReference } from '../services/git'
-import { GitHubService } from '../services/github'
+import { GitHubService, formatLabelColor } from '../services/github'
 import { getAllScopeSuggestions } from '../services/scope'
 import {
 	formatValidationResult,
@@ -68,6 +68,8 @@ export async function interactiveCommit(
 		'scope/',
 		'area:',
 		'area/',
+		'component:',
+		'component/',
 	]
 	const scopeSuggestions = getAllScopeSuggestions(
 		changedFiles,
@@ -145,13 +147,12 @@ export async function interactiveCommit(
 	}
 
 	// 2. Select scope with hybrid suggestions
-	let scope = ''
+	let scopes: string[] = []
+	const scopeMode = config?.scopeMode || 'single'
 	const presetScopes = validator.getAvailableScopes()
 
 	// Build scope options from multiple sources
-	const scopeOptions: Array<{ value: string; label: string }> = [
-		{ value: '', label: '(none)' },
-	]
+	const scopeOptions: Array<{ value: string; label: string }> = []
 
 	// Add AI/last commit scope first if available
 	const suggestedScope = aiSuggestion?.scope || lastCommit?.scope
@@ -167,12 +168,17 @@ export async function interactiveCommit(
 
 	// Add hybrid scope suggestions
 	for (const suggestion of scopeSuggestions) {
-		const sourceLabel =
-			suggestion.source === 'config'
-				? 'config'
-				: suggestion.source === 'label'
-					? `label: ${suggestion.label}`
-					: 'path'
+		let sourceLabel: string
+		if (suggestion.source === 'config') {
+			sourceLabel = 'config'
+		} else if (suggestion.source === 'label') {
+			// Show colored label badge if color is available
+			sourceLabel = suggestion.color
+				? formatLabelColor(suggestion.label || suggestion.value, suggestion.color)
+				: `label: ${suggestion.label}`
+		} else {
+			sourceLabel = 'path'
+		}
 		scopeOptions.push({
 			value: suggestion.value,
 			label: `${suggestion.value} (${sourceLabel})`,
@@ -186,17 +192,39 @@ export async function interactiveCommit(
 		}
 	}
 
-	if (scopeOptions.length > 1) {
-		const selectedScope = await select({
-			message: 'Select scope (or skip)',
-			options: scopeOptions,
-			initialValue: suggestedScope || config?.defaults?.scope || '',
-		})
+	if (scopeOptions.length > 0) {
+		if (scopeMode === 'single') {
+			// Single scope selection (original behavior)
+			const singleOptions = [{ value: '', label: '(none)' }, ...scopeOptions]
+			const selectedScope = await select({
+				message: 'Select scope (or skip)',
+				options: singleOptions,
+				initialValue: suggestedScope || config?.defaults?.scope || '',
+			})
 
-		if (isCancel(selectedScope)) {
-			throw new Error('Cancelled')
+			if (isCancel(selectedScope)) {
+				throw new Error('Cancelled')
+			}
+			if (selectedScope) {
+				scopes = [selectedScope]
+			}
+		} else {
+			// Multi-scope selection
+			const hint =
+				scopeMode === 'multi-inline'
+					? 'comma-separated in header'
+					: 'first in header, rest in body'
+			const selectedScopes = await multiselect({
+				message: `Select scopes (${hint})`,
+				options: scopeOptions,
+				required: false,
+			})
+
+			if (isCancel(selectedScopes)) {
+				throw new Error('Cancelled')
+			}
+			scopes = selectedScopes as string[]
 		}
-		scope = selectedScope
 	}
 
 	// 3. Breaking change
@@ -403,11 +431,37 @@ export async function interactiveCommit(
 
 	// 8. Preview and confirm
 	let fullMessage = `${type}`
-	if (scope) fullMessage += `(${scope})`
+
+	// Format scopes based on scopeMode
+	let headerScope = ''
+	let secondaryScopes: string[] = []
+
+	if (scopes.length > 0) {
+		if (scopeMode === 'multi-inline') {
+			// All scopes comma-separated in header: feat(cli,config): message
+			headerScope = scopes.join(',')
+		} else if (scopeMode === 'multi-body') {
+			// First scope in header, rest go to body
+			headerScope = scopes[0] as string
+			secondaryScopes = scopes.slice(1)
+		} else {
+			// Single mode - just use first scope
+			headerScope = scopes[0] as string
+		}
+	}
+
+	if (headerScope) fullMessage += `(${headerScope})`
 	if (breakingDescription) fullMessage += '!'
 	fullMessage += `: ${message}`
 
-	if (body) fullMessage += `\n\n${body}`
+	// Build body with secondary scopes if multi-body mode
+	let bodyContent = body || ''
+	if (secondaryScopes.length > 0) {
+		const scopeNote = `Also affects: ${secondaryScopes.join(', ')}`
+		bodyContent = bodyContent ? `${bodyContent}\n\n${scopeNote}` : scopeNote
+	}
+
+	if (bodyContent) fullMessage += `\n\n${bodyContent}`
 
 	if (breakingDescription) {
 		fullMessage += `\n\nBREAKING CHANGE: ${breakingDescription}`
@@ -475,9 +529,9 @@ export async function interactiveCommit(
 
 	const result = await git.createCommit({
 		type,
-		scope: scope || undefined,
+		scope: headerScope || undefined,
 		message,
-		body: body || undefined,
+		body: bodyContent || undefined,
 		breaking: breakingDescription || undefined,
 		coauthors: selectedCoAuthors.map(formatCoAuthor),
 		issueRefs,
