@@ -50,11 +50,13 @@ export function mockGitHubService(
 		currentPR?: PullRequest | null
 		labels?: string[]
 		issues?: Issue[]
+		isAvailable?: boolean
 	} = {},
 ): Partial<GitHubService> {
 	return {
 		getCurrentPR: async () => overrides.currentPR || null,
 		getLabels: async () => overrides.labels || [],
+		isAvailable: () => overrides.isAvailable ?? true,
 		searchIssues: async (_query: string) => overrides.issues || [],
 		getIssue: async (_number: number) => null,
 		getPR: async (_number: number) => null,
