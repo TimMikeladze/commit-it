@@ -1,7 +1,7 @@
 import type { Config } from '../../src/config'
 
 export function createTestConfig(overrides: Partial<Config> = {}): Config {
-	return {
+	const defaults: Config = {
 		preset: 'conventional',
 		scopeMode: 'single',
 		defaults: { scope: '', includeBody: true },
@@ -23,6 +23,22 @@ export function createTestConfig(overrides: Partial<Config> = {}): Config {
 			scopeLabelPatterns: ['scope:', 'area:'],
 			auto: { detectIssues: true, suggestReviewers: false },
 		},
+	}
+
+	// Deep merge validation config if provided
+	if (overrides.validation) {
+		return {
+			...defaults,
+			...overrides,
+			validation: {
+				...defaults.validation,
+				...overrides.validation,
+			},
+		}
+	}
+
+	return {
+		...defaults,
 		...overrides,
 	}
 }
