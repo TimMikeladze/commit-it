@@ -1,6 +1,8 @@
 import { expect, test } from 'bun:test'
-import { greet } from '../src'
+import { listPresets } from '../src'
 
-test('should greet correctly', () => {
-	expect(greet('World')).toBe('Hello, World!')
+test('should export listPresets', () => {
+	const presets = listPresets()
+	expect(presets).toBeArrayOfSize(3)
+	expect(presets).toContain('conventional')
 })
