@@ -138,7 +138,10 @@ export const initCommand = command({
 			return
 		}
 
-		const { filename, content } = generateConfig(preset || 'conventional', format)
+		const { filename, content } = generateConfig(
+			preset || 'conventional',
+			format,
+		)
 		const configPath = join(process.cwd(), filename)
 
 		writeFileSync(configPath, content)

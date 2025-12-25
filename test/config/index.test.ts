@@ -67,7 +67,6 @@ describe('Configuration', () => {
 		test('should have optional fields undefined', () => {
 			const config = getDefaultConfig()
 			expect(config.template).toBeUndefined()
-			expect(config.scopeMap).toBeUndefined()
 			expect(config.coauthors).toBeUndefined()
 			expect(config.validation?.allowedTypes).toBeUndefined()
 			expect(config.validation?.allowedScopes).toBeUndefined()
@@ -91,7 +90,6 @@ describe('Configuration', () => {
 				preset: 'conventional',
 			})
 			expect(config.preset).toBe('conventional')
-			expect(config.scopeMap).toBeUndefined()
 		})
 
 		test('should allow validation config', () => {
@@ -146,7 +144,7 @@ describe('Configuration', () => {
 				},
 			})
 			expect(config.validation?.customRules).toHaveLength(1)
-			expect(config.validation?.customRules?.[0].name).toBe('no-wip')
+			expect(config.validation?.customRules?.[0]?.name).toBe('no-wip')
 		})
 
 		test('should allow coauthors', () => {

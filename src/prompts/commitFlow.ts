@@ -10,7 +10,7 @@ import {
 } from '../services/coauthor'
 import { FormatValidator } from '../services/format'
 import { GitService, type IssueReference } from '../services/git'
-import { GitHubService, formatLabelColor } from '../services/github'
+import { formatLabelColor, GitHubService } from '../services/github'
 import { getAllScopeSuggestions } from '../services/scope'
 import {
 	formatValidationResult,
@@ -174,7 +174,10 @@ export async function interactiveCommit(
 		} else if (suggestion.source === 'label') {
 			// Show colored label badge if color is available
 			sourceLabel = suggestion.color
-				? formatLabelColor(suggestion.label || suggestion.value, suggestion.color)
+				? formatLabelColor(
+						suggestion.label || suggestion.value,
+						suggestion.color,
+					)
 				: `label: ${suggestion.label}`
 		} else {
 			sourceLabel = 'path'

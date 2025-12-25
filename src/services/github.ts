@@ -17,7 +17,7 @@ export function hexToAnsi(hex: string): number {
 	const b = Number.parseInt(hex.slice(4, 6), 16)
 
 	// Convert to 256-color palette (16-231 are a 6x6x6 color cube)
-	const toLevel = (v: number) => Math.round(v / 255 * 5)
+	const toLevel = (v: number) => Math.round((v / 255) * 5)
 	return 16 + 36 * toLevel(r) + 6 * toLevel(g) + toLevel(b)
 }
 

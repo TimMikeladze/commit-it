@@ -1,6 +1,12 @@
-import type { Config } from '../../src/config'
+import type { Config, ValidationConfig } from '../../src/config'
 
-export function createTestConfig(overrides: Partial<Config> = {}): Config {
+type DeepPartialConfig = Partial<
+	Omit<Config, 'validation'> & {
+		validation?: Partial<ValidationConfig>
+	}
+>
+
+export function createTestConfig(overrides: DeepPartialConfig = {}): Config {
 	const defaults: Config = {
 		preset: 'conventional',
 		scopeMode: 'single',
@@ -26,21 +32,19 @@ export function createTestConfig(overrides: Partial<Config> = {}): Config {
 	}
 
 	// Deep merge validation config if provided
-	if (overrides.validation) {
-		return {
-			...defaults,
-			...overrides,
-			validation: {
-				...defaults.validation,
-				...overrides.validation,
-			},
-		}
-	}
-
-	return {
+	const result = {
 		...defaults,
 		...overrides,
 	}
+
+	if (overrides.validation) {
+		result.validation = {
+			...defaults.validation!,
+			...overrides.validation,
+		}
+	}
+
+	return result as Config
 }
 
 export function sleep(ms: number): Promise<void> {

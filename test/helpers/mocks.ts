@@ -12,7 +12,7 @@ export function mockGitService(
 		currentBranch?: string
 		changedFiles?: string[]
 	} = {},
-): Partial<GitService> {
+): GitService {
 	return {
 		getStagedDiff: async () => overrides.stagedDiff || '',
 		getBranchName: async () => overrides.currentBranch || 'main',
@@ -38,11 +38,11 @@ export function mockGitService(
 		createOrSwitchBranch: async (_branchName: string) => ({
 			created: true,
 		}),
-		createCommit: async (options) => ({
+		createCommit: async (options: { type: string; message: string }) => ({
 			hash: 'mock-hash-123',
 			message: `${options.type}: ${options.message}`,
 		}),
-	}
+	} as unknown as GitService
 }
 
 export function mockGitHubService(
@@ -52,11 +52,10 @@ export function mockGitHubService(
 		issues?: Issue[]
 		isAvailable?: boolean
 	} = {},
-): Partial<GitHubService> {
+): GitHubService {
 	return {
 		getCurrentPR: async () => overrides.currentPR || null,
 		getLabels: async () => overrides.labels || [],
-		isAvailable: () => overrides.isAvailable ?? true,
 		searchIssues: async (_query: string) => overrides.issues || [],
 		getIssue: async (_number: number) => null,
 		getPR: async (_number: number) => null,
@@ -70,7 +69,7 @@ export function mockGitHubService(
 			const base = issueNumbers.join('-')
 			return postfix ? `${base}-${postfix}` : base
 		},
-	}
+	} as unknown as GitHubService
 }
 
 export function mockAI(overrides: { suggestion?: AICommitSuggestion } = {}) {

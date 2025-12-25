@@ -270,25 +270,25 @@ describe('Template Service', () => {
 
 	describe('DEFAULT_TEMPLATES', () => {
 		test('should have conventional template', () => {
-			expect(DEFAULT_TEMPLATES.conventional).toBeDefined()
-			expect(DEFAULT_TEMPLATES.conventional).toContain('{{type}}')
-			expect(DEFAULT_TEMPLATES.conventional).toContain('{{message}}')
+			expect(DEFAULT_TEMPLATES.conventional!).toBeDefined()
+			expect(DEFAULT_TEMPLATES.conventional!).toContain('{{type}}')
+			expect(DEFAULT_TEMPLATES.conventional!).toContain('{{message}}')
 		})
 
 		test('should have angular template', () => {
-			expect(DEFAULT_TEMPLATES.angular).toBeDefined()
-			expect(DEFAULT_TEMPLATES.angular).toContain('{{type}}')
-			expect(DEFAULT_TEMPLATES.angular).toContain('{{message}}')
+			expect(DEFAULT_TEMPLATES.angular!).toBeDefined()
+			expect(DEFAULT_TEMPLATES.angular!).toContain('{{type}}')
+			expect(DEFAULT_TEMPLATES.angular!).toContain('{{message}}')
 		})
 
 		test('should have gitmoji template', () => {
-			expect(DEFAULT_TEMPLATES.gitmoji).toBeDefined()
-			expect(DEFAULT_TEMPLATES.gitmoji).toContain('{{type}}')
-			expect(DEFAULT_TEMPLATES.gitmoji).toContain('{{message}}')
+			expect(DEFAULT_TEMPLATES.gitmoji!).toBeDefined()
+			expect(DEFAULT_TEMPLATES.gitmoji!).toContain('{{type}}')
+			expect(DEFAULT_TEMPLATES.gitmoji!).toContain('{{message}}')
 		})
 
 		test('conventional template should render correctly', () => {
-			const result = renderTemplate(DEFAULT_TEMPLATES.conventional, {
+			const result = renderTemplate(DEFAULT_TEMPLATES.conventional!, {
 				type: 'feat',
 				scope: 'api',
 				message: 'add endpoint',
@@ -297,7 +297,7 @@ describe('Template Service', () => {
 		})
 
 		test('angular template should render correctly', () => {
-			const result = renderTemplate(DEFAULT_TEMPLATES.angular, {
+			const result = renderTemplate(DEFAULT_TEMPLATES.angular!, {
 				type: 'feat',
 				scope: 'api',
 				message: 'add endpoint',
@@ -306,7 +306,7 @@ describe('Template Service', () => {
 		})
 
 		test('gitmoji template should render correctly', () => {
-			const result = renderTemplate(DEFAULT_TEMPLATES.gitmoji, {
+			const result = renderTemplate(DEFAULT_TEMPLATES.gitmoji!, {
 				type: '✨',
 				scope: 'api',
 				message: 'add endpoint',

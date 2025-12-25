@@ -41,7 +41,7 @@ export function parseCommitMessage(message: string): ParsedMessage {
 	let subject = header
 	let isBreaking = false
 
-	if (headerMatch) {
+	if (headerMatch && headerMatch[1] && headerMatch[4]) {
 		type = headerMatch[1]
 		scope = headerMatch[2]
 		isBreaking = headerMatch[3] === '!'
@@ -60,6 +60,7 @@ export function parseCommitMessage(message: string): ParsedMessage {
 
 		for (let i = 2; i < lines.length; i++) {
 			const line = lines[i]
+			if (!line) continue
 
 			// Detect footer patterns
 			if (
@@ -77,7 +78,9 @@ export function parseCommitMessage(message: string): ParsedMessage {
 				// Extract issue numbers
 				const issueMatches = line.matchAll(/#(\d+)/g)
 				for (const match of issueMatches) {
-					issues.push(parseInt(match[1], 10))
+					if (match[1]) {
+						issues.push(parseInt(match[1], 10))
+					}
 				}
 
 				// Check for breaking change in footer
@@ -101,17 +104,18 @@ export function parseCommitMessage(message: string): ParsedMessage {
  */
 export function validateCommitMessage(
 	message: string,
-	config: ValidationConfig,
+	config?: Partial<ValidationConfig>,
 ): ValidationResult {
+	const fullConfig = { ...getDefaultValidationConfig(), ...config }
 	const issues: ValidationIssue[] = []
 	const parsed = parseCommitMessage(message)
 	const lines = message.split('\n')
 
 	// 1. Header length
-	if (parsed.header.length > config.maxHeaderLength) {
+	if (parsed.header.length > fullConfig.maxHeaderLength) {
 		issues.push({
 			rule: 'header-max-length',
-			message: `Header exceeds ${config.maxHeaderLength} characters (${parsed.header.length})`,
+			message: `Header exceeds ${fullConfig.maxHeaderLength} characters (${parsed.header.length})`,
 			level: 'error',
 			line: 1,
 		})
@@ -122,10 +126,11 @@ export function validateCommitMessage(
 		const bodyStartLine = 3 // After header and blank line
 		const bodyLines = parsed.body.split('\n')
 		for (let i = 0; i < bodyLines.length; i++) {
-			if (bodyLines[i].length > config.maxBodyLineLength) {
+			const line = bodyLines[i]
+			if (line && line.length > fullConfig.maxBodyLineLength) {
 				issues.push({
 					rule: 'body-max-line-length',
-					message: `Body line ${i + 1} exceeds ${config.maxBodyLineLength} characters`,
+					message: `Body line ${i + 1} exceeds ${fullConfig.maxBodyLineLength} characters`,
 					level: 'warning',
 					line: bodyStartLine + i,
 				})
@@ -134,7 +139,7 @@ export function validateCommitMessage(
 	}
 
 	// 3. Require scope
-	if (config.requireScope && !parsed.scope) {
+	if (fullConfig.requireScope && !parsed.scope) {
 		issues.push({
 			rule: 'scope-required',
 			message: 'Scope is required',
@@ -143,7 +148,7 @@ export function validateCommitMessage(
 	}
 
 	// 4. Require body
-	if (config.requireBody && !parsed.body) {
+	if (fullConfig.requireBody && !parsed.body) {
 		issues.push({
 			rule: 'body-required',
 			message: 'Body is required',
@@ -152,7 +157,7 @@ export function validateCommitMessage(
 	}
 
 	// 5. Require issue reference
-	if (config.requireIssue && parsed.issues.length === 0) {
+	if (fullConfig.requireIssue && parsed.issues.length === 0) {
 		issues.push({
 			rule: 'issue-required',
 			message: 'At least one issue reference is required',
@@ -161,29 +166,29 @@ export function validateCommitMessage(
 	}
 
 	// 6. Allowed types
-	if (config.allowedTypes && config.allowedTypes.length > 0) {
-		if (!parsed.type || !config.allowedTypes.includes(parsed.type)) {
+	if (fullConfig.allowedTypes && fullConfig.allowedTypes.length > 0) {
+		if (!parsed.type || !fullConfig.allowedTypes.includes(parsed.type)) {
 			issues.push({
 				rule: 'type-enum',
-				message: `Type "${parsed.type || '(none)'}" is not allowed. Use: ${config.allowedTypes.join(', ')}`,
+				message: `Type "${parsed.type || '(none)'}" is not allowed. Use: ${fullConfig.allowedTypes.join(', ')}`,
 				level: 'error',
 			})
 		}
 	}
 
 	// 7. Allowed scopes
-	if (config.allowedScopes && config.allowedScopes.length > 0) {
-		if (parsed.scope && !config.allowedScopes.includes(parsed.scope)) {
+	if (fullConfig.allowedScopes && fullConfig.allowedScopes.length > 0) {
+		if (parsed.scope && !fullConfig.allowedScopes.includes(parsed.scope)) {
 			issues.push({
 				rule: 'scope-enum',
-				message: `Scope "${parsed.scope}" is not allowed. Use: ${config.allowedScopes.join(', ')}`,
+				message: `Scope "${parsed.scope}" is not allowed. Use: ${fullConfig.allowedScopes.join(', ')}`,
 				level: 'error',
 			})
 		}
 	}
 
 	// 8. No trailing period
-	if (config.noTrailingPeriod && parsed.subject.endsWith('.')) {
+	if (fullConfig.noTrailingPeriod && parsed.subject.endsWith('.')) {
 		issues.push({
 			rule: 'subject-no-trailing-period',
 			message: 'Subject should not end with a period',
@@ -193,7 +198,7 @@ export function validateCommitMessage(
 
 	// 9. No leading capital (if enabled)
 	if (
-		config.noLeadingCapital &&
+		fullConfig.noLeadingCapital &&
 		parsed.subject &&
 		/^[A-Z]/.test(parsed.subject)
 	) {
@@ -225,7 +230,7 @@ export function validateCommitMessage(
 	}
 
 	// 12. Custom rules
-	for (const rule of config.customRules) {
+	for (const rule of fullConfig.customRules) {
 		try {
 			const regex = new RegExp(rule.pattern)
 			const matches = regex.test(message)

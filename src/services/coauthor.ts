@@ -12,7 +12,7 @@ export interface CoAuthor {
  */
 export function parseCoAuthor(value: string): CoAuthor | null {
 	const match = value.match(/^(.+?)\s*<(.+)>$/)
-	if (match) {
+	if (match && match[1] && match[2]) {
 		return {
 			name: match[1].trim(),
 			email: match[2].trim(),
@@ -52,7 +52,7 @@ export function getCoAuthorsFromConfig(
 			}
 			return null
 		})
-		.filter((c): c is CoAuthor => c !== null)
+		.filter((c) => c !== null) as CoAuthor[]
 }
 
 /**

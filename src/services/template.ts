@@ -57,7 +57,8 @@ export function buildFullMessage(
 	data: TemplateData,
 	template?: string,
 ): string {
-	const preset = template || DEFAULT_TEMPLATES.conventional
+	const preset =
+		template || DEFAULT_TEMPLATES.conventional || '{{type}}: {{message}}'
 	let message = renderTemplate(preset, data)
 
 	// Add body

@@ -7,5 +7,5 @@
 import { defineConfig } from 'commit-it'
 
 export default defineConfig({
-  preset: 'conventional',
+	preset: 'conventional',
 })

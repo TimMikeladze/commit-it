@@ -116,7 +116,7 @@ export class GitService {
 		let message = firstLine
 		let isBreaking = false
 
-		if (match) {
+		if (match && match[1] && match[4]) {
 			type = match[1]
 			scope = match[2]
 			isBreaking = match[3] === '!'
@@ -133,6 +133,8 @@ export class GitService {
 
 			for (let i = 2; i < lines.length; i++) {
 				const line = lines[i]
+				if (!line) continue
+
 				if (line.startsWith('BREAKING CHANGE:')) {
 					inBreaking = true
 					breaking = line.replace('BREAKING CHANGE:', '').trim()

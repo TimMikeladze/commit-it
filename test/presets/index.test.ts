@@ -32,7 +32,7 @@ describe('Presets', () => {
 
 	describe('presets', () => {
 		test('should have conventional types', () => {
-			const types = presets.conventional.types.map((t) => t.value)
+			const types = presets.conventional!.types.map((t) => t.value)
 			expect(types).toContain('feat')
 			expect(types).toContain('fix')
 			expect(types).toContain('docs')
@@ -44,7 +44,7 @@ describe('Presets', () => {
 		})
 
 		test('should have gitmoji types', () => {
-			const types = presets.gitmoji.types
+			const types = presets.gitmoji!.types
 			expect(types.some((t) => t.value === '✨')).toBe(true)
 			expect(types.some((t) => t.value === '🐛')).toBe(true)
 		})

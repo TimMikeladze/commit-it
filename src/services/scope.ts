@@ -25,7 +25,10 @@ export function getScopesFromConfig(
 	for (const file of changedFiles) {
 		for (const pattern of patterns) {
 			if (micromatch.isMatch(file, pattern)) {
-				scopes.add(scopeMap[pattern])
+				const scope = scopeMap[pattern]
+				if (scope) {
+					scopes.add(scope)
+				}
 			}
 		}
 	}
@@ -79,6 +82,8 @@ export function getScopesFromPaths(changedFiles: string[]): ScopeSuggestion[] {
 			// e.g., src/commands/commit.ts → "commands" or "commit"
 			for (let i = 0; i < parts.length - 1; i++) {
 				const dir = parts[i]
+				if (!dir) continue
+
 				// Skip common non-descriptive directories
 				if (
 					![

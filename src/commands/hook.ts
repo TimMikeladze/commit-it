@@ -83,7 +83,9 @@ export const installHookCommand = command({
 			console.log('✓ Installed commit-msg hook')
 			console.log(`  Location: ${hookPath}`)
 			console.log('\nCommit messages will now be validated before each commit.')
-			console.log('Configure rules in commit.config.ts or .commitrc under "validation"')
+			console.log(
+				'Configure rules in commit.config.ts or .commitrc under "validation"',
+			)
 		} catch (error: any) {
 			console.error('✗ Error:', error.message)
 			process.exit(1)

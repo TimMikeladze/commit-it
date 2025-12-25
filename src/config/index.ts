@@ -23,12 +23,10 @@ const ValidationSchema = z.object({
 	customRules: z.array(CustomRuleSchema).default([]),
 })
 
-const ConfigSchema: z.ZodType = z.object({
+const ConfigSchema = z.object({
 	preset: z.string().default('conventional'),
 	template: z.string().optional(),
-	scopeMode: z
-		.enum(['single', 'multi-inline', 'multi-body'])
-		.default('single'),
+	scopeMode: z.enum(['single', 'multi-inline', 'multi-body']).default('single'),
 	defaults: z
 		.object({
 			scope: z.string().optional(),
@@ -90,7 +88,7 @@ export type Config = z.infer<typeof ConfigSchema>
  */
 export async function loadConfig(): Promise<Config> {
 	try {
-		const { config } = await loadC12Config({
+		const { config } = await loadC12Config<Config>({
 			name: 'commit',
 			rcFile: '.commitrc',
 			dotenv: false,
@@ -98,7 +96,7 @@ export async function loadConfig(): Promise<Config> {
 			defaults: getDefaultConfig(),
 		})
 
-		return ConfigSchema.parse(config)
+		return ConfigSchema.parse(config ?? getDefaultConfig())
 	} catch {
 		// Return default config if loading fails
 		return getDefaultConfig()
@@ -115,7 +113,9 @@ export async function loadConfig(): Promise<Config> {
  *   scopeMap: { 'src/cli/**': 'cli' }
  * })
  */
-export function defineConfig(config: Partial<Config>): Partial<Config> {
+export function defineConfig<T extends Record<string, unknown>>(
+	config: T,
+): T {
 	return config
 }
 

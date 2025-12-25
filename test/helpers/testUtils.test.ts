@@ -30,7 +30,7 @@ describe('Test Utils', () => {
 	})
 
 	test('createSpy should track function calls', () => {
-		const spy = createSpy<(a: number, b: string) => void>()
+		const spy = createSpy<(...args: unknown[]) => void>()
 		spy(1, 'test')
 		spy(2, 'another')
 

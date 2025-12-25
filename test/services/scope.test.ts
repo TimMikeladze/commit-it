@@ -17,8 +17,8 @@ describe('Scope Service', () => {
 			}
 			const scopes = getScopesFromConfig(['src/cli/index.ts'], scopeMap)
 			expect(scopes).toHaveLength(1)
-			expect(scopes[0].value).toBe('cli')
-			expect(scopes[0].source).toBe('config')
+			expect(scopes[0]!.value).toBe('cli')
+			expect(scopes[0]!.source).toBe('config')
 		})
 
 		test('should handle multiple matching paths', () => {
@@ -58,7 +58,7 @@ describe('Scope Service', () => {
 				scopeMap,
 			)
 			expect(scopes).toHaveLength(1)
-			expect(scopes[0].value).toBe('cli')
+			expect(scopes[0]!.value).toBe('cli')
 		})
 	})
 
@@ -70,10 +70,10 @@ describe('Scope Service', () => {
 			]
 			const scopes = getScopesFromLabels(labels, ['scope:', 'area:'])
 			expect(scopes).toHaveLength(1)
-			expect(scopes[0].value).toBe('cli')
-			expect(scopes[0].source).toBe('label')
-			expect(scopes[0].label).toBe('scope:cli')
-			expect(scopes[0].color).toBe('ff0000')
+			expect(scopes[0]!.value).toBe('cli')
+			expect(scopes[0]!.source).toBe('label')
+			expect(scopes[0]!.label).toBe('scope:cli')
+			expect(scopes[0]!.color).toBe('ff0000')
 		})
 
 		test('should handle multiple scope labels', () => {
@@ -92,7 +92,7 @@ describe('Scope Service', () => {
 			const labels: Label[] = [{ name: 'component:auth', color: '0000ff' }]
 			const scopes = getScopesFromLabels(labels, ['component:', 'module:'])
 			expect(scopes).toHaveLength(1)
-			expect(scopes[0].value).toBe('auth')
+			expect(scopes[0]!.value).toBe('auth')
 		})
 
 		test('should return empty for non-matching labels', () => {
@@ -133,8 +133,8 @@ describe('Scope Service', () => {
 			])
 			expect(scopes.length).toBeGreaterThan(0)
 			// services appears twice, should be first
-			expect(scopes[0].value).toBe('services')
-			expect(scopes[0].source).toBe('path')
+			expect(scopes[0]!.value).toBe('services')
+			expect(scopes[0]!.source).toBe('path')
 		})
 
 		test('should return empty for root files', () => {
@@ -201,7 +201,7 @@ describe('Scope Service', () => {
 
 			const cliScopes = scopes.filter((s) => s.value === 'cli')
 			expect(cliScopes).toHaveLength(1)
-			expect(cliScopes[0].source).toBe('config') // config has priority
+			expect(cliScopes[0]!.source).toBe('config') // config has priority
 		})
 	})
 })
