@@ -66,19 +66,25 @@ describe('README Examples - Programmatic API', () => {
 
 	describe('renderTemplate', () => {
 		test('should render template with variables', () => {
-			const header = renderTemplate('{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}', {
-				type: 'feat',
-				scope: 'cli',
-				message: 'add command',
-			})
+			const header = renderTemplate(
+				'{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}',
+				{
+					type: 'feat',
+					scope: 'cli',
+					message: 'add command',
+				},
+			)
 			expect(header).toBe('feat(cli): add command')
 		})
 
 		test('should handle missing scope', () => {
-			const header = renderTemplate('{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}', {
-				type: 'docs',
-				message: 'update README',
-			})
+			const header = renderTemplate(
+				'{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}',
+				{
+					type: 'docs',
+					message: 'update README',
+				},
+			)
 			expect(header).toBe('docs: update README')
 		})
 	})
@@ -185,7 +191,11 @@ describe('README Examples - Programmatic API', () => {
 
 	describe('formatCoAuthor', () => {
 		test('should format co-author', () => {
-			const formatted = formatCoAuthor({ name: 'Alice', email: 'alice@example.com', source: 'manual' })
+			const formatted = formatCoAuthor({
+				name: 'Alice',
+				email: 'alice@example.com',
+				source: 'manual',
+			})
 			expect(formatted).toBe('Co-authored-by: Alice <alice@example.com>')
 		})
 	})
@@ -193,9 +203,9 @@ describe('README Examples - Programmatic API', () => {
 	describe('getCoAuthorsFromConfig', () => {
 		test('should get co-authors from config', () => {
 			const authors = getCoAuthorsFromConfig({
-			alice: 'Alice <alice@example.com>',
-			bob: 'Bob <bob@example.com>',
-		})
+				alice: 'Alice <alice@example.com>',
+				bob: 'Bob <bob@example.com>',
+			})
 			expect(authors).toHaveLength(2)
 			expect(authors[0]?.name).toBe('Alice')
 			expect(authors[1]?.name).toBe('Bob')

@@ -43,7 +43,9 @@ describe('README Examples - Validation', () => {
 		)
 
 		expect(result.valid).toBe(true) // Still valid, but has warnings
-		expect(result.warnings.some((e) => e.rule === 'subject-no-trailing-period')).toBeTruthy()
+		expect(
+			result.warnings.some((e) => e.rule === 'subject-no-trailing-period'),
+		).toBeTruthy()
 	})
 
 	test('should enforce max header length', () => {
