@@ -1,29 +1,78 @@
 import { loadConfig as loadC12Config } from 'c12'
 import { z } from 'zod'
 
-const CustomRuleSchema = z.object({
+export type CustomRule = {
+	name: string
+	pattern: string
+	message: string
+	level: 'error' | 'warning'
+	invert: boolean
+}
+
+export type ValidationConfig = {
+	enabled: boolean
+	maxHeaderLength: number
+	maxBodyLineLength: number
+	requireScope: boolean
+	requireBody: boolean
+	requireIssue: boolean
+	allowedTypes?: string[]
+	allowedScopes?: string[]
+	noTrailingPeriod: boolean
+	noLeadingCapital: boolean
+	customRules: CustomRule[]
+}
+
+export type Config = {
+	preset: string
+	template?: string
+	scopeMode: 'single' | 'multi-inline' | 'multi-body'
+	defaults?: {
+		scope?: string
+		includeBody: boolean
+	}
+	plugins: string[]
+	scopeMap?: Record<string, string>
+	coauthors?: Record<string, string>
+	validation?: ValidationConfig
+	ai?: {
+		enabled: boolean
+		provider: 'openai' | 'anthropic' | 'auto'
+		model?: string
+	}
+	github?: {
+		enabled: boolean
+		scopeLabelPatterns: string[]
+		auto?: {
+			detectIssues: boolean
+			suggestReviewers: boolean
+		}
+	}
+}
+
+const CustomRuleSchema: z.ZodType<CustomRule> = z.object({
 	name: z.string(),
 	pattern: z.string(),
 	message: z.string(),
 	level: z.enum(['error', 'warning']).default('error'),
-	invert: z.boolean().default(false), // If true, pattern must NOT match
+	invert: z.boolean().default(false),
 })
 
-const ValidationSchema = z.object({
+const ValidationSchema: z.ZodType<ValidationConfig> = z.object({
 	enabled: z.boolean().default(true),
 	maxHeaderLength: z.number().default(72),
 	maxBodyLineLength: z.number().default(100),
 	requireScope: z.boolean().default(false),
 	requireBody: z.boolean().default(false),
 	requireIssue: z.boolean().default(false),
-	allowedTypes: z.array(z.string()).optional(), // If set, only these types allowed
-	allowedScopes: z.array(z.string()).optional(), // If set, only these scopes allowed
+	allowedTypes: z.array(z.string()).optional(),
+	allowedScopes: z.array(z.string()).optional(),
 	noTrailingPeriod: z.boolean().default(true),
-	noLeadingCapital: z.boolean().default(false), // Some prefer lowercase messages
+	noLeadingCapital: z.boolean().default(false),
 	customRules: z.array(CustomRuleSchema).default([]),
 })
 
-const ConfigSchema = z.object({
+const ConfigSchema: z.ZodType<Config> = z.object({
 	preset: z.string().default('conventional'),
 	template: z.string().optional(),
 	scopeMode: z.enum(['single', 'multi-inline', 'multi-body']).default('single'),
@@ -66,11 +115,6 @@ const ConfigSchema = z.object({
 		})
 		.optional(),
 })
-
-export type CustomRule = z.infer<typeof CustomRuleSchema>
-export type ValidationConfig = z.infer<typeof ValidationSchema>
-
-export type Config = z.infer<typeof ConfigSchema>
 
 /**
  * Supported config file names (in priority order):
