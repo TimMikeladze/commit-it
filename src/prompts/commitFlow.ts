@@ -144,7 +144,8 @@ export async function interactiveCommit(
 		message: 'Select commit type',
 		options: availableTypes.map((t) => ({
 			value: t.value,
-			label: `${t.value.padEnd(10)} ${t.desc}`,
+			label: t.value,
+			hint: t.desc,
 		})),
 		initialValue:
 			aiSuggestion?.type ||
@@ -302,7 +303,8 @@ export async function interactiveCommit(
 							message: 'How should this issue be referenced?',
 							options: ISSUE_ACTIONS.map((a) => ({
 								value: a.value,
-								label: `${a.label.padEnd(10)} ${a.desc}`,
+								label: a.label,
+								hint: a.desc,
 							})),
 							initialValue: 'Closes',
 						})

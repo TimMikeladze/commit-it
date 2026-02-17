@@ -68,48 +68,10 @@ export function getScopesFromLabels(
 }
 
 /**
- * Auto-detect scopes from file paths by extracting directory names
+ * @deprecated Path-based scope detection removed — use scopeMap config instead.
  */
-export function getScopesFromPaths(changedFiles: string[]): ScopeSuggestion[] {
-	const scopeCounts = new Map<string, number>()
-
-	for (const file of changedFiles) {
-		const parts = file.split('/')
-		// Skip root files and extract meaningful directory names
-		if (parts.length > 1) {
-			// Try to get a meaningful scope from the path
-			// e.g., src/services/github.ts → "services" or "github"
-			// e.g., src/commands/commit.ts → "commands" or "commit"
-			for (let i = 0; i < parts.length - 1; i++) {
-				const dir = parts[i]
-				if (!dir) continue
-
-				// Skip common non-descriptive directories
-				if (
-					![
-						'src',
-						'lib',
-						'app',
-						'packages',
-						'dist',
-						'build',
-						'node_modules',
-					].includes(dir)
-				) {
-					scopeCounts.set(dir, (scopeCounts.get(dir) || 0) + 1)
-				}
-			}
-		}
-	}
-
-	// Sort by frequency and return top scopes
-	return Array.from(scopeCounts.entries())
-		.sort((a, b) => b[1] - a[1])
-		.slice(0, 5)
-		.map(([value]) => ({
-			value,
-			source: 'path' as const,
-		}))
+export function getScopesFromPaths(_changedFiles: string[]): ScopeSuggestion[] {
+	return []
 }
 
 /**
