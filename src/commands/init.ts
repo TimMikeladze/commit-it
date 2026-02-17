@@ -2,6 +2,7 @@ import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { confirm, isCancel, select, text } from '@clack/prompts'
 import { command } from '@drizzle-team/brocli'
+import { setupShellAlias } from './alias'
 
 type ConfigFormat = 'ts' | 'js' | 'json' | 'yaml'
 
@@ -83,7 +84,7 @@ validation:
 	// JSON format
 	return {
 		filename,
-		content: JSON.stringify(config, null, '\t') + '\n',
+		content: `${JSON.stringify(config, null, '\t')}\n`,
 	}
 }
 
@@ -146,8 +147,19 @@ export const initCommand = command({
 
 		writeFileSync(configPath, content)
 		console.log(`✓ Created ${filename}`)
+
+		// Offer shell alias setup
+		const addAlias = await confirm({
+			message: 'Add a shell alias? (e.g. type "commit" instead of "commit-it")',
+			initialValue: true,
+		})
+
+		if (!isCancel(addAlias) && addAlias) {
+			await setupShellAlias()
+		}
+
 		console.log('\nNext steps:')
-		console.log('  1. Run `commit-it commit` to create your first commit')
+		console.log('  1. Run `commit-it` to create your first commit')
 		console.log('  2. Run `commit-it install-hook` to enable validation')
 	},
 })

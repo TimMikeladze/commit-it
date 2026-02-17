@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { run } from '@drizzle-team/brocli'
+import { setupAliasCommand } from './commands/alias'
 import { branchCommand } from './commands/branch'
 import { commitCommand } from './commands/commit'
 import { configCommand } from './commands/config'
@@ -18,6 +19,7 @@ const commands = [
 	initCommand,
 	presetsCommand,
 	configCommand,
+	setupAliasCommand,
 ]
 
 // Default to 'commit' command if no command specified or first arg is a flag
@@ -31,10 +33,11 @@ const knownCommands = new Set([
 	'init',
 	'presets',
 	'config',
+	'setup-alias',
 ])
 
 // If no args, or first arg is a flag, inject 'commit' command
-if (args.length === 0 || (args[0] && args[0].startsWith('-'))) {
+if (args.length === 0 || args[0]?.startsWith('-')) {
 	process.argv.splice(2, 0, 'commit')
 } else if (!knownCommands.has(args[0]!)) {
 	// First arg isn't a known command, assume it's meant for commit

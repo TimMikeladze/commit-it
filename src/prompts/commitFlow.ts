@@ -29,6 +29,18 @@ export interface InteractiveOptions {
 	coAuthor?: string
 }
 
+export interface DirectCommitOptions {
+	type: string
+	message: string
+	scope?: string
+	body?: string
+	breaking?: boolean
+	dryRun?: boolean
+	stageAll?: boolean
+	amend?: boolean
+	coAuthor?: string
+}
+
 export interface CommitResult {
 	hash: string
 }
@@ -240,7 +252,7 @@ export async function interactiveCommit(
 			placeholder: 'What breaks and how to migrate',
 			initialValue: lastCommit?.breaking || '',
 			validate: (val) =>
-				val.length > 0 ? undefined : 'Breaking change description required',
+				val && val.length > 0 ? undefined : 'Breaking change description required',
 		})
 
 		if (isCancel(breakingInput)) {
@@ -328,7 +340,7 @@ export async function interactiveCommit(
 		message: 'Commit message',
 		placeholder: 'Concise description of changes',
 		initialValue: aiSuggestion?.message || lastCommit?.message || '',
-		validate: (val) => (val.length > 0 ? undefined : 'Message cannot be empty'),
+		validate: (val) => (val && val.length > 0 ? undefined : 'Message cannot be empty'),
 	})
 
 	if (isCancel(message)) {
@@ -543,4 +555,77 @@ export async function interactiveCommit(
 	})
 
 	return result
+}
+
+/**
+ * Non-interactive commit — creates a formatted commit directly from flags.
+ * Validates against the configured preset before committing.
+ */
+export async function directCommit(
+	options: DirectCommitOptions,
+): Promise<CommitResult> {
+	const config = (await loadConfig()) as any
+	const presetName = config?.preset
+	const preset = getPreset(presetName)
+	const validator = new FormatValidator(preset)
+	const git = new GitService()
+
+	// Validate type
+	if (!validator.validateType(options.type)) {
+		const validTypes = validator
+			.getAvailableTypes()
+			.map((t) => t.value)
+			.join(', ')
+		throw new Error(
+			`Invalid commit type "${options.type}". Valid types: ${validTypes}`,
+		)
+	}
+
+	// Validate scope
+	if (options.scope && !validator.validateScope(options.scope)) {
+		const validScopes = validator.getAvailableScopes().join(', ')
+		throw new Error(
+			`Invalid scope "${options.scope}". Valid scopes: ${validScopes}`,
+		)
+	}
+
+	// Resolve co-author
+	const coauthors: string[] = []
+	if (options.coAuthor) {
+		const configCoAuthors = config?.coauthors || {}
+		if (configCoAuthors[options.coAuthor]) {
+			const parsed = parseCoAuthor(configCoAuthors[options.coAuthor])
+			if (parsed) coauthors.push(formatCoAuthor(parsed))
+		} else {
+			const parsed = parseCoAuthor(options.coAuthor)
+			if (parsed) coauthors.push(formatCoAuthor(parsed))
+		}
+	}
+
+	// Validate the full message
+	const validationConfig = config?.validation || getDefaultValidationConfig()
+	if (validationConfig.enabled) {
+		const header = `${options.type}${options.scope ? `(${options.scope})` : ''}${options.breaking ? '!' : ''}: ${options.message}`
+		const validationResult = validateCommitMessage(header, validationConfig)
+		if (!validationResult.valid) {
+			throw new Error(
+				`Validation failed:\n${formatValidationResult(validationResult)}`,
+			)
+		}
+	}
+
+	if (options.stageAll) {
+		await git.stageAll()
+	}
+
+	return git.createCommit({
+		type: options.type,
+		scope: options.scope,
+		message: options.message,
+		body: options.body,
+		breaking: options.breaking ? 'breaking change' : undefined,
+		coauthors,
+		dryRun: options.dryRun,
+		amend: options.amend,
+	})
 }

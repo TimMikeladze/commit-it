@@ -116,7 +116,7 @@ export class GitService {
 		let message = firstLine
 		let isBreaking = false
 
-		if (match && match[1] && match[4]) {
+		if (match?.[1] && match[4]) {
 			type = match[1]
 			scope = match[2]
 			isBreaking = match[3] === '!'
@@ -139,7 +139,7 @@ export class GitService {
 					inBreaking = true
 					breaking = line.replace('BREAKING CHANGE:', '').trim()
 				} else if (inBreaking) {
-					breaking = (breaking || '') + '\n' + line
+					breaking = `${breaking || ''}\n${line}`
 				} else if (
 					!line.startsWith('Co-authored-by:') &&
 					!line.match(/^(Closes|Fixes|Resolves|Ref)\s+#\d+/)

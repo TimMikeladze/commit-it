@@ -41,7 +41,7 @@ export function parseCommitMessage(message: string): ParsedMessage {
 	let subject = header
 	let isBreaking = false
 
-	if (headerMatch && headerMatch[1] && headerMatch[4]) {
+	if (headerMatch?.[1] && headerMatch[4]) {
 		type = headerMatch[1]
 		scope = headerMatch[2]
 		isBreaking = headerMatch[3] === '!'

@@ -135,7 +135,7 @@ describe('Co-author Service', () => {
 				alice: 'Alice Smith <alice@example.com>',
 			}
 			const authors = getCoAuthorsFromConfig(aliases)
-			expect(authors[0]!.alias).toBe('alice')
+			expect(authors[0]?.alias).toBe('alice')
 		})
 
 		test('should set source to config', () => {
@@ -143,7 +143,7 @@ describe('Co-author Service', () => {
 				alice: 'Alice Smith <alice@example.com>',
 			}
 			const authors = getCoAuthorsFromConfig(aliases)
-			expect(authors[0]!.source).toBe('config')
+			expect(authors[0]?.source).toBe('config')
 		})
 
 		test('should filter out invalid entries', () => {

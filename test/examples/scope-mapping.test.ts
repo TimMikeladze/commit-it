@@ -3,7 +3,6 @@ import {
 	getAllScopeSuggestions,
 	getScopesFromConfig,
 	getScopesFromLabels,
-	getScopesFromPaths,
 } from '../../src'
 import type { Label } from '../../src/services/github'
 
@@ -161,7 +160,7 @@ describe('README Examples - Scope Mapping', () => {
 
 			const cliScopes = suggestions.filter((s) => s.value === 'cli')
 			expect(cliScopes).toHaveLength(1)
-			expect(cliScopes[0]!.source).toBe('config') // config has priority
+			expect(cliScopes[0]?.source).toBe('config') // config has priority
 		})
 
 		test('should handle empty inputs', () => {

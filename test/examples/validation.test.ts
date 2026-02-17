@@ -49,7 +49,7 @@ describe('README Examples - Validation', () => {
 	})
 
 	test('should enforce max header length', () => {
-		const longMessage = 'feat(cli): ' + 'a'.repeat(100)
+		const longMessage = `feat(cli): ${'a'.repeat(100)}`
 		const config = createTestConfig({
 			validation: {
 				enabled: true,
