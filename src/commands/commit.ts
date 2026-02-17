@@ -19,9 +19,7 @@ export const commitCommand = command({
 		ai: boolean('ai')
 			.desc('Generate message from diff using AI')
 			.default(false),
-		noAi: boolean('no-ai')
-			.desc('Disable AI even if configured')
-			.default(false),
+		noAi: boolean('no-ai').desc('Disable AI even if configured').default(false),
 		type: string('type').alias('t').desc('Commit type (e.g. feat, fix)'),
 		message: string('message')
 			.alias('m')

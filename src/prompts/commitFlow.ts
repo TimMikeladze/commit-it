@@ -252,7 +252,9 @@ export async function interactiveCommit(
 			placeholder: 'What breaks and how to migrate',
 			initialValue: lastCommit?.breaking || '',
 			validate: (val) =>
-				val && val.length > 0 ? undefined : 'Breaking change description required',
+				val && val.length > 0
+					? undefined
+					: 'Breaking change description required',
 		})
 
 		if (isCancel(breakingInput)) {
@@ -340,7 +342,8 @@ export async function interactiveCommit(
 		message: 'Commit message',
 		placeholder: 'Concise description of changes',
 		initialValue: aiSuggestion?.message || lastCommit?.message || '',
-		validate: (val) => (val && val.length > 0 ? undefined : 'Message cannot be empty'),
+		validate: (val) =>
+			val && val.length > 0 ? undefined : 'Message cannot be empty',
 	})
 
 	if (isCancel(message)) {
