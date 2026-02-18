@@ -1,4 +1,5 @@
 import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
+import { search } from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import { generateCommitMessage, isAIAvailable } from '../services/ai'
@@ -10,7 +11,7 @@ import {
 } from '../services/coauthor'
 import { FormatValidator } from '../services/format'
 import { GitService, type IssueReference } from '../services/git'
-import { formatLabelColor, GitHubService } from '../services/github'
+import { formatLabelColor, GitHubService, type Issue } from '../services/github'
 import { getAllScopeSuggestions } from '../services/scope'
 import {
 	formatValidationResult,
@@ -276,52 +277,71 @@ export async function interactiveCommit(
 	}
 
 	while (addMoreIssues) {
-		const issueQuery = await text({
-			message: 'Search issues (number or keyword)',
-			placeholder: '123 or "login bug"',
-		})
-
-		if (isCancel(issueQuery)) {
-			throw new Error('Cancelled')
-		}
-
-		if (issueQuery) {
-			try {
-				const issues = await github.searchIssues(issueQuery)
-				if (issues.length > 0) {
-					const selectedIssue = await select({
-						message: 'Select issue',
-						options: issues.map((i) => ({
-							value: i.number,
-							label: `#${i.number} - ${i.title}`,
-						})),
-					})
-
-					if (!isCancel(selectedIssue)) {
-						// Ask for action keyword
-						const action = await select({
-							message: 'How should this issue be referenced?',
-							options: ISSUE_ACTIONS.map((a) => ({
-								value: a.value,
-								label: a.label,
-								hint: a.desc,
+		try {
+			const selectedIssue = await search<Issue | null>({
+				message: 'Search issues (type to search)',
+				source: async (input, { signal }) => {
+					if (!input) {
+						// Show recent open issues by default
+						const issues = await github.searchIssues('state:open sort:updated')
+						if (signal.aborted) return []
+						return [
+							...issues.map((i) => ({
+								name: `#${i.number} ${i.title}`,
+								value: i as Issue | null,
+								description:
+									i.labels.map((l) => l.name).join(', ') || undefined,
 							})),
-							initialValue: 'Closes',
-						})
-
-						if (!isCancel(action)) {
-							const issue = issues.find((i) => i.number === selectedIssue)
-							issueRefs.push({
-								action: action as IssueReference['action'],
-								number: selectedIssue as number,
-								title: issue?.title,
-							})
-						}
+							{ name: 'Skip', value: null },
+						]
 					}
+
+					// Debounce: wait 300ms before searching
+					await new Promise<void>((resolve, reject) => {
+						const timer = setTimeout(resolve, 300)
+						signal.addEventListener('abort', () => {
+							clearTimeout(timer)
+							reject(signal.reason)
+						})
+					})
+					if (signal.aborted) return []
+
+					const issues = await github.searchIssues(input)
+					if (signal.aborted) return []
+					return [
+						...issues.map((i) => ({
+							name: `#${i.number} ${i.title}`,
+							value: i as Issue | null,
+							description: i.labels.map((l) => l.name).join(', ') || undefined,
+						})),
+						{ name: 'Skip', value: null },
+					]
+				},
+			})
+
+			if (selectedIssue) {
+				// Ask for action keyword
+				const action = await select({
+					message: 'How should this issue be referenced?',
+					options: ISSUE_ACTIONS.map((a) => ({
+						value: a.value,
+						label: a.label,
+						hint: a.desc,
+					})),
+					initialValue: 'Closes',
+				})
+
+				if (!isCancel(action)) {
+					issueRefs.push({
+						action: action as IssueReference['action'],
+						number: selectedIssue.number,
+						title: selectedIssue.title,
+					})
 				}
-			} catch {
-				// Silently continue if issue search fails
 			}
+		} catch {
+			// User cancelled or search failed
+			break
 		}
 
 		// Ask if they want to add another issue
