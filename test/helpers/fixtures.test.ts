@@ -15,7 +15,6 @@ describe('Test Fixtures', () => {
 		expect(testConfig.preset).toBe('conventional')
 		expect(testConfig.validation).toBeDefined()
 		expect(testConfig.validation?.enabled).toBe(true)
-		expect(testConfig.ai).toBeDefined()
 		expect(testConfig.github).toBeDefined()
 	})
 

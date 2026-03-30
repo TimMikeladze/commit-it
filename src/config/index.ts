@@ -35,11 +35,6 @@ export type Config = {
 	scopeMap?: Record<string, string>
 	coauthors?: Record<string, string>
 	validation?: ValidationConfig
-	ai?: {
-		enabled: boolean
-		provider: 'openai' | 'anthropic' | 'auto'
-		model?: string
-	}
 	github?: {
 		enabled: boolean
 		scopeLabelPatterns: string[]
@@ -86,13 +81,6 @@ const ConfigSchema: z.ZodType<Config> = z.object({
 	scopeMap: z.record(z.string(), z.string()).optional(),
 	coauthors: z.record(z.string(), z.string()).optional(),
 	validation: ValidationSchema.optional(),
-	ai: z
-		.object({
-			enabled: z.boolean().default(false),
-			provider: z.enum(['openai', 'anthropic', 'auto']).default('auto'),
-			model: z.string().optional(),
-		})
-		.optional(),
 	github: z
 		.object({
 			enabled: z.boolean().default(true),
@@ -193,11 +181,6 @@ export function getDefaultConfig(): Config {
 			noTrailingPeriod: true,
 			noLeadingCapital: false,
 			customRules: [],
-		},
-		ai: {
-			enabled: false,
-			provider: 'auto',
-			model: undefined,
 		},
 		github: {
 			enabled: true,

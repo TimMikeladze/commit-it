@@ -23,7 +23,6 @@ export function createTestConfig(overrides: DeepPartialConfig = {}): Config {
 			noLeadingCapital: false,
 			customRules: [],
 		},
-		ai: { enabled: false, provider: 'auto' },
 		github: {
 			enabled: true,
 			scopeLabelPatterns: ['scope:', 'area:'],

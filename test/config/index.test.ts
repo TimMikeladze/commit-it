@@ -34,12 +34,6 @@ describe('Configuration', () => {
 			expect(config.plugins).toEqual([])
 		})
 
-		test('should have AI disabled by default', () => {
-			const config = getDefaultConfig()
-			expect(config.ai?.enabled).toBe(false)
-			expect(config.ai?.provider).toBe('auto')
-		})
-
 		test('should have GitHub auto detect issues enabled', () => {
 			const config = getDefaultConfig()
 			expect(config.github?.auto?.detectIssues).toBe(true)
@@ -103,19 +97,6 @@ describe('Configuration', () => {
 			expect(config.validation?.enabled).toBe(true)
 			expect(config.validation?.maxHeaderLength).toBe(50)
 			expect(config.validation?.requireScope).toBe(true)
-		})
-
-		test('should allow AI config', () => {
-			const config = defineConfig({
-				ai: {
-					enabled: true,
-					provider: 'openai',
-					model: 'gpt-4',
-				},
-			})
-			expect(config.ai?.enabled).toBe(true)
-			expect(config.ai?.provider).toBe('openai')
-			expect(config.ai?.model).toBe('gpt-4')
 		})
 
 		test('should allow GitHub config', () => {

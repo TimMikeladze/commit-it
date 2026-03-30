@@ -20,10 +20,6 @@ export const testConfig: Config = {
 		noLeadingCapital: false,
 		customRules: [],
 	},
-	ai: {
-		enabled: false,
-		provider: 'auto',
-	},
 	github: {
 		enabled: true,
 		scopeLabelPatterns: ['scope:', 'area:'],
