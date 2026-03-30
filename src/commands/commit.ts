@@ -1,5 +1,6 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
 import { directCommit, interactiveCommit } from '../prompts/commitFlow'
+import { shouldAutoAI } from '../services/ai'
 
 export const commitCommand = command({
 	name: 'commit',
@@ -20,6 +21,7 @@ export const commitCommand = command({
 			.desc('Generate message from diff using AI')
 			.default(false),
 		noAi: boolean('no-ai').desc('Disable AI even if configured').default(false),
+		provider: string('provider').desc('AI provider to use (claude, codex, agent, custom)'),
 		type: string('type').alias('t').desc('Commit type (e.g. feat, fix)'),
 		message: string('message')
 			.alias('m')
@@ -51,13 +53,16 @@ export const commitCommand = command({
 				return
 			}
 
+			const autoAI = await shouldAutoAI()
+			const useAI = opts.noAi ? false : (opts.ai || autoAI)
 			const commit = await interactiveCommit({
 				skipGithub: opts.noGithub,
 				dryRun: opts.dryRun,
 				stageAll: opts.all,
 				amend: opts.amend,
 				breaking: opts.breaking,
-				useAI: opts.noAi ? false : opts.ai,
+				useAI,
+				provider: opts.provider,
 				coAuthor: opts.coAuthor,
 			})
 			console.log(

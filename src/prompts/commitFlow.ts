@@ -2,7 +2,7 @@ import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
 import { default as search } from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
-import { generateCommitMessage, isAIAvailable } from '../services/ai'
+import { generateCommitMessage, isAIAvailable, NO_CLI_ERROR_MESSAGE } from '../services/ai'
 import {
 	type CoAuthor,
 	formatCoAuthor,
@@ -31,6 +31,7 @@ export interface InteractiveOptions {
 	amend?: boolean
 	breaking?: boolean
 	useAI?: boolean
+	provider?: string
 	coAuthor?: string
 }
 
@@ -108,15 +109,25 @@ export async function interactiveCommit(
 
 	// AI generation (if requested)
 	let aiSuggestion = null
-	if (options.useAI && (await isAIAvailable())) {
+	if (options.useAI) {
+		const available = await isAIAvailable(options.provider)
+		if (!available) {
+			console.error(`\n✗ ${NO_CLI_ERROR_MESSAGE}\n`)
+			throw new Error('No AI CLI available')
+		}
+
 		console.log('🤖 Generating commit message with AI...\n')
 		const diff = await git.getStagedDiff()
 		if (diff) {
 			const types = validator.getAvailableTypes().map((t) => t.value)
-			aiSuggestion = await generateCommitMessage(diff, {
-				branchName: await git.getBranchName(),
-				existingTypes: types,
-			})
+			aiSuggestion = await generateCommitMessage(
+				diff,
+				{
+					branchName: await git.getBranchName(),
+					existingTypes: types,
+				},
+				options.provider,
+			)
 			if (aiSuggestion) {
 				console.log('✨ AI suggestion:')
 				console.log(
