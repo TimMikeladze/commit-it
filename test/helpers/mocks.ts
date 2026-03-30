@@ -80,5 +80,7 @@ export function mockAI(overrides: { suggestion?: AICommitSuggestion } = {}) {
 				scope: 'test',
 				message: 'add test feature',
 			},
+		isAIAvailable: async () => true,
+		shouldAutoAI: async () => false,
 	}
 }

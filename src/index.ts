@@ -7,8 +7,12 @@ export type {
 } from './prompts/commitFlow'
 export { directCommit, interactiveCommit } from './prompts/commitFlow'
 // AI service
-export type { AICommitSuggestion } from './services/ai'
-export { generateCommitMessage, isAIAvailable } from './services/ai'
+export type { AICommitSuggestion, GenerateContext } from './services/ai'
+export {
+	generateCommitMessage,
+	isAIAvailable,
+	shouldAutoAI,
+} from './services/ai'
 // Co-author service
 export type { CoAuthor } from './services/coauthor'
 export {

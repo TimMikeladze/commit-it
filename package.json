@@ -4,7 +4,8 @@
 	"description": "Interactive CLI for creating standardized git commits with GitHub integration",
 	"bin": {
 		"commit-it": "./dist/cli.js",
-		"cit": "./dist/cli.js"
+		"cit": "./dist/cli.js",
+		"commit": "./dist/cli.js"
 	},
 	"homepage": "https://github.com/TimMikeladze/commit-it#readme",
 	"bugs": {
@@ -65,12 +66,9 @@
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"dependencies": {
-		"@ai-sdk/anthropic": "^3.0.44",
-		"@ai-sdk/openai": "^3.0.29",
 		"@clack/prompts": "^1.0.1",
 		"@drizzle-team/brocli": "^0.11.0",
 		"@inquirer/search": "^4.1.3",
-		"ai": "^6.0.86",
 		"c12": "^4.0.0-beta.3",
 		"micromatch": "^4.0.8",
 		"simple-git": "^3.31.1",
