@@ -25,11 +25,12 @@ export function hexToAnsi(hex: string): number {
  * Format text with background color using ANSI escape codes
  */
 export function formatLabelColor(text: string, hexColor: string): string {
-	const ansiCode = hexToAnsi(hexColor)
+	const hex = hexColor.replace('#', '')
+	const ansiCode = hexToAnsi(hex)
 	// Use bright foreground for dark backgrounds, dark for light
-	const r = Number.parseInt(hexColor.slice(0, 2), 16)
-	const g = Number.parseInt(hexColor.slice(2, 4), 16)
-	const b = Number.parseInt(hexColor.slice(4, 6), 16)
+	const r = Number.parseInt(hex.slice(0, 2), 16)
+	const g = Number.parseInt(hex.slice(2, 4), 16)
+	const b = Number.parseInt(hex.slice(4, 6), 16)
 	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 	const fgCode = luminance > 0.5 ? 0 : 15 // black or white text
 
@@ -63,18 +64,6 @@ export class GitHubService {
 
 	constructor(enabled: boolean = true) {
 		this.enabled = enabled
-		if (this.enabled) {
-			this.checkGhInstalled()
-		}
-	}
-
-	private checkGhInstalled(): void {
-		try {
-			// Simple check for gh command availability
-			require.resolve('which').toString()
-		} catch {
-			// Silently continue - will fail when trying to use gh
-		}
 	}
 
 	async searchIssues(query: string): Promise<Issue[]> {
@@ -171,10 +160,10 @@ export class GitHubService {
 
 		try {
 			const result = await execFileThrow('gh', [
-				'repo',
-				'collaborators',
-				'--limit',
-				'50',
+				'api',
+				'repos/{owner}/{repo}/collaborators',
+				'--jq',
+				'.[].login',
 			])
 			return result.split('\n').filter((line) => line.trim())
 		} catch {

@@ -10,8 +10,9 @@ export const configCommand = command({
 			console.log('\nCurrent configuration:\n')
 			console.log(JSON.stringify(config, null, 2))
 			console.log()
-		} catch (error: any) {
-			console.error('✗ Error loading config:', error.message)
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			console.error('✗ Error loading config:', message)
 			process.exit(1)
 		}
 	},

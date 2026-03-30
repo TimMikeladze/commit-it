@@ -1,55 +1,72 @@
 # commit-it
 
-An interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation, co-author support, and configurable validation.
+Interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation, co-author support, and configurable validation. Works as both a CLI tool and a programmatic library.
 
 ## Table of Contents
 
-- [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Commands](#commands)
-  - [Non-Interactive Mode](#non-interactive-mode)
+  - [`commit` (default)](#commit-default)
+  - [`branch`](#branch)
+  - [`validate`](#validate)
+  - [`init`](#init)
+  - [`install-hook` / `uninstall-hook`](#install-hook--uninstall-hook)
+  - [`presets`](#presets)
+  - [`config`](#config)
+  - [`setup-alias`](#setup-alias)
 - [Interactive Commit Flow](#interactive-commit-flow)
+- [Non-Interactive Mode](#non-interactive-mode)
 - [Configuration](#configuration)
-- [Presets](#presets)
+  - [Config File Locations](#config-file-locations)
+  - [Full Config Reference](#full-config-reference)
+  - [Scope Modes](#scope-modes)
+  - [Custom Validation Rules](#custom-validation-rules)
+  - [Config in package.json](#config-in-packagejson)
+  - [Config in YAML](#config-in-yaml)
+- [Presets](#presets-1)
 - [AI Commit Messages](#ai-commit-messages)
 - [GitHub Integration](#github-integration)
 - [Git Hook](#git-hook)
+- [Shell Alias](#shell-alias)
 - [Validation Rules](#validation-rules)
 - [Scope Suggestions](#scope-suggestions)
 - [Co-authors](#co-authors)
+- [Commit Message Templates](#commit-message-templates)
 - [Programmatic API](#programmatic-api)
+  - [Direct Commit](#direct-commit)
+  - [Interactive Commit](#interactive-commit)
+  - [Validate Commit Messages](#validate-commit-messages)
+  - [Parse Commit Messages](#parse-commit-messages)
+  - [Format Validation](#format-validation)
+  - [Git Operations](#git-operations)
+  - [GitHub Operations](#github-operations)
+  - [Scope Suggestions](#scope-suggestions-api)
+  - [Co-author Utilities](#co-author-utilities)
+  - [Template Engine](#template-engine)
+  - [AI Generation](#ai-generation)
+  - [Config Utilities](#config-utilities)
+  - [Preset Utilities](#preset-utilities)
+- [Example Configurations](#example-configurations)
 - [Architecture](#architecture)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
-## Features
-
-- **Interactive commit creation** — Step-by-step prompts guide you through building a commit message
-- **Default command** — Running `commit-it` with no arguments starts the commit flow immediately
-- **Multiple presets** — Conventional Commits, Angular, and Gitmoji formats
-- **GitHub integration** — Detect PR context, search/link issues, extract scopes from labels via `gh` CLI
-- **AI-powered suggestions** — Generate commit messages from staged diffs using OpenAI or Anthropic
-- **Smart scopes** — Suggest scopes from file paths, config glob maps, and GitHub labels
-- **Multi-scope modes** — Single scope, comma-separated inline, or primary + body
-- **Co-author support** — Add co-authors from config aliases, GitHub collaborators, or manual entry
-- **Commit message validation** — Built-in rules plus custom regex rules with error/warning levels
-- **Git hook** — Install a `commit-msg` hook to validate every commit automatically
-- **Branch generation** — Create git branches from GitHub issue numbers and titles
-- **Dry run** — Preview commits without creating them
-- **Amend support** — Amend the last commit with pre-filled values
-- **Non-interactive mode** — Pass `--type` and `--message` flags to create commits without prompts (ideal for CI/CD and scripting)
-- **Programmatic API** — Import and use all services in your own scripts
-
 ## Installation
 
 ```bash
 # npm
-npm install -g commit-it
+npm install commit-it
 
 # bun
-bun add -g commit-it
+bun add commit-it
+
+# pnpm
+pnpm add commit-it
+
+# global install
+npm install -g commit-it
 
 # or run without installing
 npx commit-it
@@ -59,144 +76,368 @@ bunx commit-it
 ## Quick Start
 
 ```bash
-# Run the interactive commit flow (default command)
-commit-it
-
-# Or use the shorter alias
-cit
-
-# Initialize a config file
+# 1. Initialize config (optional - works without config too)
 commit-it init
 
-# Install the commit-msg validation hook
+# 2. Set up a shell alias (optional - type "commit" instead of "commit-it")
+commit-it setup-alias
+
+# 3. Install the commit-msg validation hook (optional)
 commit-it install-hook
+
+# 4. Create your first commit
+commit-it
 ```
 
-Running `commit-it` with no arguments (or with only flags) automatically runs the `commit` command. If the first argument isn't a recognized command, it's also treated as a `commit` invocation.
+The CLI is also available as `cit`:
+
+```bash
+cit              # interactive commit
+cit --ai         # AI-generated commit message
+cit -t fix -m "resolve bug"  # non-interactive
+```
+
+Running `commit-it` with no arguments (or with only flags) defaults to the `commit` command. If the first argument isn't a recognized command, it's also treated as `commit`.
+
+---
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `commit-it` | Run the interactive commit flow (default when no command given) |
-| `commit-it commit` | Same as above, explicitly |
-| `commit-it branch` | Create a git branch from GitHub issues |
-| `commit-it validate` | Validate a commit message against configured rules |
-| `commit-it init` | Generate a config file interactively |
-| `commit-it install-hook` | Install a `commit-msg` git hook for validation |
-| `commit-it uninstall-hook` | Remove the `commit-msg` git hook |
-| `commit-it presets` | List available commit format presets |
-| `commit-it config` | Print the resolved configuration as JSON |
-| `commit-it setup-alias` | Add a shell alias (e.g. `commit`) to your shell config |
+### `commit` (default)
 
-### `commit` Options
+Create a standardized commit interactively or via flags.
 
 ```bash
-commit-it commit [options]
+# Interactive mode - walks through type, scope, message, issues, co-authors
+commit-it
+
+# Explicitly run the commit command
+commit-it commit
 ```
 
+**All flags:**
+
 | Flag | Alias | Description |
-|---|---|---|
-| `--type <type>` | `-t` | Commit type (e.g. `feat`, `fix`). When used with `--message`, enables non-interactive mode |
-| `--message <msg>` | `-m` | Commit message. When used with `--type`, enables non-interactive mode |
+|------|-------|-------------|
+| `--type <type>` | `-t` | Commit type (e.g. `feat`, `fix`). Enables non-interactive mode when combined with `--message` |
+| `--message <msg>` | `-m` | Commit message. Enables non-interactive mode when combined with `--type` |
 | `--scope <scope>` | `-s` | Commit scope |
-| `--body <text>` | | Commit body text |
-| `--all` | `-a` | Stage all changes before committing |
-| `--amend` | | Amend the last commit (pre-fills type, scope, message from previous) |
-| `--breaking` | `-b` | Mark as a breaking change |
+| `--body <text>` | | Commit body |
+| `--all` | `-a` | Stage all changes before committing (`git add .`) |
+| `--amend` | | Amend the last commit (pre-fills fields from previous commit) |
+| `--breaking` | `-b` | Mark as a breaking change (adds `!` and `BREAKING CHANGE` footer) |
 | `--ai` | | Generate commit message from staged diff using AI |
-| `--no-ai` | | Disable AI even if configured |
-| `--co-author <value>` | `-c` | Add a co-author by config alias or `"Name <email>"` |
+| `--no-ai` | | Disable AI even if enabled in config |
+| `--co-author <value>` | `-c` | Add co-author by config alias or `"Name <email>"` |
 | `--no-github` | | Skip all GitHub API calls |
 | `--dry-run` | | Preview the commit message without creating it |
 
-#### Non-Interactive Mode
-
-When both `--type` and `--message` are provided, commit-it skips all interactive prompts and creates the commit directly. The commit is still validated against your configured preset and validation rules.
+**Examples:**
 
 ```bash
-# Basic non-interactive commit
-commit-it -t feat -m "add user authentication"
+# Simple interactive commit
+commit-it
 
-# With scope, body, and breaking change
-commit-it -t fix -s auth -m "resolve token refresh race condition" --body "Tokens were being refreshed concurrently" -b
+# Stage everything, use AI to generate the message
+commit-it -a --ai
 
-# Dry run to preview
+# Quick fix with scope
+commit-it -t fix -s auth -m "resolve token refresh race condition"
+
+# Feature with body text
+commit-it -t feat -m "add CSV export" --body "Supports UTF-8 encoding and custom delimiters"
+
+# Breaking change
+commit-it -t feat -m "redesign user API" --breaking
+
+# Amend the last commit interactively
+commit-it --amend
+
+# Dry run to see what would be committed
 commit-it -t refactor -s cli -m "extract validation logic" --dry-run
 
-# Stage all + co-author
-commit-it -t feat -m "add dark mode" -a -c "Alice Smith <alice@example.com>"
+# Stage all + co-author by config alias
+commit-it -a -t feat -m "add dark mode" -c alice
+
+# Co-author by full name and email
+commit-it -t feat -m "add dark mode" -c "Alice Smith <alice@example.com>"
+
+# Skip GitHub for faster local-only commits
+commit-it --no-github
 ```
 
-This is useful for CI/CD pipelines, scripting, and other CLI tools that want to create formatted commits programmatically while still enforcing your commit conventions. Invalid types or scopes will cause an error with a message listing the valid options.
+### `branch`
 
-### `validate` Options
+Create a git branch from GitHub issues. Searches issues interactively, lets you select one or more, generates a slugified branch name from issue numbers and titles.
 
 ```bash
-commit-it validate [options]
+commit-it branch
+
+# With a postfix
+commit-it branch --postfix wip
 ```
 
 | Flag | Alias | Description |
-|---|---|---|
+|------|-------|-------------|
+| `--postfix <value>` | `-p` | Append a postfix to the generated branch name |
+
+**Interactive flow:**
+
+1. Search for issues by number or keyword (e.g. `123` or `"login bug"`)
+2. Select one or more issues from the results
+3. Optionally add a postfix (e.g. `wip`, `quick-fix`)
+4. Preview and confirm the branch name
+
+**Example output:**
+
+```
+Search for issues: login bug
+Select issues: #42 - Fix login redirect, #15 - Session timeout
+Add postfix? wip
+
+Branch preview: 15-42-fix-login-redirect-and-session-timeout-wip
+Create this branch? Yes
+✓ Created new branch: 15-42-fix-login-redirect-and-session-timeout-wip
+```
+
+### `validate`
+
+Validate a commit message against your configured rules. Exits with code 1 if validation fails.
+
+```bash
+# Validate a message string
+commit-it validate --message "feat(cli): add new command"
+
+# Validate from a file (used by git hooks)
+commit-it validate --file .git/COMMIT_EDITMSG
+```
+
+| Flag | Alias | Description |
+|------|-------|-------------|
 | `--message <msg>` | `-m` | Commit message string to validate |
-| `--file <path>` | `-f` | File containing a commit message (e.g. `.git/COMMIT_EDITMSG`) |
+| `--file <path>` | `-f` | File containing a commit message |
 
 One of `--message` or `--file` is required.
 
-### `branch` Options
+**Example output (valid):**
 
-```bash
-commit-it branch [options]
+```
+Validating commit message:
+
+  "feat(cli): add new command"
+
+✓ Commit message is valid
 ```
 
-| Flag | Alias | Description |
-|---|---|---|
-| `--postfix <value>` | `-p` | Append a postfix to the generated branch name |
+**Example output (invalid):**
 
-The branch command is interactive — it prompts you to search for issues, select one or more, and optionally add a postfix before creating the branch.
+```
+Validating commit message:
 
-### `install-hook` Options
+  "this is not a conventional commit message that is way too long and exceeds the maximum header length"
 
-| Flag | Alias | Description |
-|---|---|---|
-| `--force` | `-f` | Overwrite an existing `commit-msg` hook |
+✗ Errors:
+  • header-max-length (line 1): Header exceeds 72 characters (97)
+  • conventional-format: Message does not follow conventional commit format: type(scope): subject
+```
 
-## Interactive Commit Flow
+### `init`
 
-Running `commit-it` walks through these steps:
-
-1. **Select commit type** — `feat`, `fix`, `docs`, `refactor`, etc. (from your preset). Pre-selected from AI suggestion, previous commit (when amending), or PR labels.
-2. **Select scope** — Suggested from changed file paths, config `scopeMap`, and GitHub label patterns. Supports single, multi-inline, or multi-body modes.
-3. **Breaking change** — If `--breaking` is set, prompts for a description of what breaks.
-4. **Reference issues** — Optionally search and link GitHub issues. Choose an action for each: `Closes`, `Fixes`, `Resolves`, or `Ref`. You can link multiple issues.
-5. **Commit message** — The short description (pre-filled from AI or previous commit).
-6. **Body** — Optional detailed description.
-7. **Co-authors** — Select from config aliases, GitHub collaborators, or enter manually.
-8. **Preview and validate** — See the full message, check against validation rules, then confirm.
-
-When amending (`--amend`), all fields are pre-filled from the previous commit.
-
-When using AI (`--ai`), the staged diff is sent to the configured provider and the suggestion is shown for you to accept or decline before proceeding.
-
-## Configuration
-
-### Generating a Config File
+Generate a configuration file interactively.
 
 ```bash
 commit-it init
 ```
 
-Choose from TypeScript, JavaScript, JSON, or YAML format. The generated file includes sensible defaults.
+**Interactive flow:**
+
+1. Choose config format: TypeScript (recommended), JavaScript, JSON, or YAML
+2. Choose default preset: `conventional`, `angular`, or `gitmoji`
+3. Optionally set up a shell alias
+
+**Generated TypeScript config:**
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  defaults: {
+    scope: '',
+    includeBody: true,
+  },
+  github: {
+    enabled: true,
+    auto: {
+      detectIssues: true,
+      suggestReviewers: false,
+    },
+  },
+  validation: {
+    enabled: true,
+    maxHeaderLength: 72,
+    requireScope: false,
+  },
+})
+```
+
+### `install-hook` / `uninstall-hook`
+
+Install or remove a `commit-msg` git hook that validates every commit automatically.
+
+```bash
+# Install the hook
+commit-it install-hook
+
+# Overwrite an existing hook
+commit-it install-hook --force
+
+# Remove the hook
+commit-it uninstall-hook
+```
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `--force` | `-f` | Overwrite an existing `commit-msg` hook |
+
+The hook script looks for `commit-it` on `PATH` first, then falls back to `npx commit-it`. Once installed, every `git commit` runs validation before the commit is finalized.
+
+If a non-commit-it `commit-msg` hook already exists, you'll be prompted to use `--force` or manually add the validation to your existing hook:
+
+```bash
+commit-it validate --file "$1"
+```
+
+### `presets`
+
+List available commit format presets.
+
+```bash
+commit-it presets
+```
+
+**Output:**
+
+```
+Available presets:
+
+  conventional: Conventional Commits
+  angular: Angular Style
+  gitmoji: Gitmoji
+```
+
+### `config`
+
+Print the fully resolved configuration (merged config file + defaults) as JSON.
+
+```bash
+commit-it config
+```
+
+Useful for debugging config loading issues or verifying what rules are active.
+
+### `setup-alias`
+
+Add a shell alias so you can type `commit` (or any name) instead of `commit-it`.
+
+```bash
+commit-it setup-alias
+```
+
+Auto-detects your shell from `$SHELL` and supports:
+
+| Shell | Config File | Alias Format |
+|-------|-------------|--------------|
+| Zsh | `~/.zshrc` | `alias commit='commit-it'` |
+| Bash | `~/.bashrc` | `alias commit='commit-it'` |
+| Fish | `~/.config/fish/config.fish` | `alias commit 'commit-it'` |
+
+After setup, activate with `source ~/.zshrc` (or your shell's config file). This is also offered during `commit-it init`.
+
+---
+
+## Interactive Commit Flow
+
+Running `commit-it` (or `cit`) walks through these steps:
+
+```
+1. Select commit type    ─── feat, fix, docs, refactor, etc. (from preset)
+2. Select scope          ─── Suggested from changed files, scopeMap, PR labels
+3. Breaking change       ─── If --breaking, describe what breaks
+4. Reference issues      ─── Search GitHub issues, pick action (Closes/Fixes/Resolves/Ref)
+5. Commit message        ─── Short description (pre-filled from AI or previous commit)
+6. Body                  ─── Optional detailed description
+7. Co-authors            ─── Select from config/GitHub or enter manually
+8. Preview & validate    ─── See full message, check rules, confirm
+```
+
+**Smart defaults at each step:**
+
+- **Type** is pre-selected from: AI suggestion > previous commit (when amending) > PR label (`bug` -> `fix`, `feature` -> `feat`)
+- **Scope** is suggested from: AI suggestion > previous commit > config `scopeMap` matched against changed files > PR labels matching `scopeLabelPatterns`
+- **Message** is pre-filled from: AI suggestion > previous commit message
+- **Body** is pre-filled from: AI suggestion > previous commit body
+- **Issue prompt** defaults to "yes" if `github.auto.detectIssues` is enabled (default)
+
+When **amending** (`--amend`), all fields are pre-filled from the previous commit's parsed components (type, scope, message, body, breaking change).
+
+When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (type, scope, message, body) is shown. You accept or decline, then proceed through the flow with accepted values pre-filled.
+
+**Validation at preview:** If validation fails, you see the errors and can choose to continue anyway or cancel.
+
+---
+
+## Non-Interactive Mode
+
+When both `--type` and `--message` are provided, commit-it skips all prompts and creates the commit directly. The message is still validated against your configured rules.
+
+```bash
+# Minimal
+commit-it -t feat -m "add user authentication"
+
+# With scope and body
+commit-it -t fix -s auth -m "resolve token refresh" --body "Tokens now refresh 5 min before expiry"
+
+# Breaking change
+commit-it -t feat -m "redesign API" -b
+
+# Stage all changes and commit with co-author
+commit-it -a -t feat -m "add dark mode" -c alice
+
+# Preview without committing
+commit-it -t refactor -s cli -m "extract validation" --dry-run
+```
+
+Invalid types or scopes cause an error listing valid options:
+
+```
+✗ Error creating commit: Invalid commit type "yolo". Valid types: feat, fix, docs, style, refactor, perf, test, chore
+```
+
+This mode is ideal for CI/CD pipelines, scripts, git hooks, and any automation that needs structured commits.
+
+---
+
+## Configuration
 
 ### Config File Locations
 
-commit-it uses [c12](https://github.com/unjs/c12) for config loading. Supported files (in priority order):
+commit-it uses [c12](https://github.com/unjs/c12) for configuration loading. Files are checked in this order:
 
-- `commit.config.ts` (recommended)
-- `commit.config.js` / `.mjs` / `.cjs`
-- `.commitrc` / `.commitrc.json` / `.commitrc.yaml` / `.commitrc.yml`
-- `.commit.json` / `.commit.yaml` / `.commit.yml`
-- `commit` key in `package.json`
+| File | Format |
+|------|--------|
+| `commit.config.ts` | TypeScript (recommended) |
+| `commit.config.js` | JavaScript ESM |
+| `commit.config.mjs` | JavaScript ESM |
+| `commit.config.cjs` | JavaScript CJS |
+| `.commitrc` | JSON or YAML |
+| `.commitrc.json` | JSON |
+| `.commitrc.yaml` / `.commitrc.yml` | YAML |
+| `.commit.json` | JSON |
+| `.commit.yaml` / `.commit.yml` | YAML |
+| `"commit"` key in `package.json` | JSON |
+
+If no config file is found, commit-it uses sensible defaults (conventional preset, validation enabled, GitHub enabled).
 
 ### Full Config Reference
 
@@ -205,129 +446,267 @@ commit-it uses [c12](https://github.com/unjs/c12) for config loading. Supported 
 import { defineConfig } from 'commit-it'
 
 export default defineConfig({
+  // ─── Preset ───────────────────────────────────────────────
   // Commit format preset: 'conventional' | 'angular' | 'gitmoji'
   // Default: 'conventional'
   preset: 'conventional',
 
   // Custom commit message template (overrides preset template)
-  // Uses {type}, {scope}, {message}, {emoji} placeholders
+  // Uses {type}, {scope}, {message} placeholders
   template: undefined,
 
-  // How multiple scopes are handled
+  // ─── Scope Mode ───────────────────────────────────────────
+  // How multiple scopes are handled in the interactive flow
   // 'single'       — pick one scope (default)
   // 'multi-inline' — comma-separated in header: feat(cli,config): ...
   // 'multi-body'   — first scope in header, rest noted in body
   scopeMode: 'single',
 
-  // Default values for commit fields
+  // ─── Defaults ─────────────────────────────────────────────
   defaults: {
-    scope: '',          // Pre-selected scope
-    includeBody: true,  // Default answer for "Add detailed body?"
+    scope: '',           // Pre-selected scope value
+    includeBody: true,   // Default answer for "Add detailed body?" prompt
   },
 
-  // Plugins (reserved for future use)
-  plugins: [],
-
-  // Map file glob patterns to scope names
-  // When changed files match a pattern, the scope is suggested
+  // ─── Scope Map ────────────────────────────────────────────
+  // Map glob patterns to scope names. When changed files match
+  // a pattern, the scope is suggested in the interactive flow.
   scopeMap: {
     'src/cli/**': 'cli',
+    'src/commands/**': 'cli',
     'src/services/**': 'core',
     'src/config/**': 'config',
+    'src/utils/**': 'utils',
+    'tests/**': 'test',
     'docs/**': 'docs',
+    '*.md': 'docs',
   },
 
-  // Co-author aliases for quick access via --co-author <alias>
+  // ─── Co-authors ───────────────────────────────────────────
+  // Aliases for --co-author flag and interactive selection
   coauthors: {
     alice: 'Alice Smith <alice@example.com>',
     bob: 'Bob Jones <bob@example.com>',
   },
 
-  // AI commit message generation
+  // ─── AI ───────────────────────────────────────────────────
   ai: {
-    enabled: false,                // Enable AI features
-    provider: 'auto',             // 'openai' | 'anthropic' | 'auto'
-    model: undefined,             // Override default model
+    enabled: false,       // Enable AI commit message generation
+    provider: 'auto',     // 'openai' | 'anthropic' | 'auto'
+    model: undefined,     // Override default model name
   },
 
-  // GitHub integration (requires gh CLI)
+  // ─── GitHub ───────────────────────────────────────────────
   github: {
     enabled: true,
     // Label prefixes used to extract scopes from PR/issue labels
-    // e.g. label "scope:api" with prefix "scope:" -> scope "api"
+    // e.g. label "scope:api" with pattern "scope:" -> scope "api"
     scopeLabelPatterns: [
       'scope:', 'scope/',
       'area:', 'area/',
       'component:', 'component/',
     ],
     auto: {
-      detectIssues: true,         // Prompt for issue references by default
-      suggestReviewers: false,    // Suggest reviewers from collaborators
+      detectIssues: true,    // Default to "yes" for issue reference prompt
+      suggestReviewers: false,
     },
   },
 
-  // Commit message validation rules
+  // ─── Validation ───────────────────────────────────────────
   validation: {
     enabled: true,
-    maxHeaderLength: 72,          // Max first-line length
-    maxBodyLineLength: 100,       // Max body line length (warning)
-    requireScope: false,          // Scope is mandatory
-    requireBody: false,           // Body is mandatory
-    requireIssue: false,          // At least one issue reference required
-    allowedTypes: undefined,      // Restrict to these types (undefined = all preset types)
-    allowedScopes: undefined,     // Restrict to these scopes (undefined = unrestricted)
-    noTrailingPeriod: true,       // Subject must not end with "."
-    noLeadingCapital: false,      // Subject must start with lowercase
-    customRules: [],              // Array of custom regex rules (see below)
+    maxHeaderLength: 72,       // Max first-line length
+    maxBodyLineLength: 100,    // Max body line length (warning level)
+    requireScope: false,       // Scope is mandatory
+    requireBody: false,        // Body is mandatory
+    requireIssue: false,       // At least one issue reference required
+    allowedTypes: undefined,   // Restrict to these types (undefined = preset types)
+    allowedScopes: undefined,  // Restrict to these scopes (undefined = any)
+    noTrailingPeriod: true,    // Subject must not end with "."
+    noLeadingCapital: false,   // Subject must start with lowercase
+    customRules: [],           // Array of custom regex rules
   },
+
+  // ─── Plugins ──────────────────────────────────────────────
+  plugins: [],  // Reserved for future use
 })
+```
+
+### Scope Modes
+
+The `scopeMode` setting controls how multiple scopes appear in the commit:
+
+**`single`** (default) -- pick one scope:
+
+```
+feat(cli): add new command
+```
+
+**`multi-inline`** -- all scopes comma-separated in the header:
+
+```
+feat(cli,config): add new command with config support
+```
+
+**`multi-body`** -- first scope in header, rest noted in body:
+
+```
+feat(cli): add new command
+
+Also affects: config, utils
 ```
 
 ### Custom Validation Rules
 
-Each custom rule is a regex-based check:
+Each rule is a regex test against the full commit message:
 
 ```typescript
-customRules: [
-  {
-    name: 'no-wip',             // Rule identifier
-    pattern: '\\bWIP\\b',       // Regex pattern
-    message: 'WIP commits are not allowed',
-    level: 'error',             // 'error' (blocks) or 'warning' (advisory)
-    invert: true,               // true = fails when pattern MATCHES
-                                // false = fails when pattern DOES NOT match
-  },
-  {
-    name: 'require-ticket',
-    pattern: 'JIRA-\\d+',
-    message: 'Must reference a JIRA ticket',
-    level: 'error',
-    invert: false,              // Fails if no JIRA ticket found
-  },
-]
+validation: {
+  customRules: [
+    // Block pattern: fails when the regex MATCHES (invert: true)
+    {
+      name: 'no-wip',
+      pattern: '\\bWIP\\b',
+      message: 'WIP commits are not allowed on this branch',
+      level: 'error',
+      invert: true,
+    },
+
+    // Require pattern: fails when the regex DOES NOT match (invert: false)
+    {
+      name: 'require-ticket',
+      pattern: 'PROJ-\\d+',
+      message: 'Must include a JIRA ticket (e.g., PROJ-123)',
+      level: 'error',
+      invert: false,
+    },
+
+    // Warning-level rule (doesn't block the commit)
+    {
+      name: 'suggest-issue',
+      pattern: '#\\d+',
+      message: 'Consider referencing a GitHub issue',
+      level: 'warning',
+      invert: false,
+    },
+  ],
+}
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Rule identifier (shown in validation output) |
+| `pattern` | `string` | Regex pattern (double-escape backslashes in JSON/TS) |
+| `message` | `string` | Error/warning message when rule fails |
+| `level` | `'error' \| 'warning'` | `error` blocks commit, `warning` is advisory |
+| `invert` | `boolean` | `true`: fail when pattern matches. `false`: fail when pattern doesn't match |
+
+### Config in package.json
+
+```json
+{
+  "name": "my-app",
+  "commit": {
+    "preset": "conventional",
+    "scopeMap": {
+      "src/**": "core",
+      "tests/**": "test"
+    },
+    "validation": {
+      "enabled": true,
+      "maxHeaderLength": 72,
+      "requireScope": true
+    }
+  }
+}
+```
+
+### Config in YAML
+
+```yaml
+# .commitrc.yaml
+preset: conventional
+
+scopeMap:
+  "src/**": core
+  "tests/**": test
+
+validation:
+  enabled: true
+  maxHeaderLength: 72
+  requireScope: true
+  customRules:
+    - name: no-wip
+      pattern: "\\bWIP\\b"
+      message: WIP commits not allowed
+      level: error
+      invert: true
+```
+
+---
 
 ## Presets
 
-| Preset | Format | Types |
-|---|---|---|
-| `conventional` | `type(scope): message` | `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore` |
-| `angular` | `type(scope): message` | `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test` |
-| `gitmoji` | `emoji message` | ✨, 🐛, 📚, 💅, ♻️, ⚡, ✅, 🔧, 🚀 |
+Three built-in presets define the commit format, available types, and validation regex:
 
-Each preset includes its own validator regex and default scopes.
+### Conventional Commits (default)
+
+```
+type(scope): message
+```
+
+| Type | Description |
+|------|-------------|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation only changes |
+| `style` | Changes that do not affect the meaning of code |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `perf` | Code change that improves performance |
+| `test` | Adding missing tests |
+| `chore` | Changes to build process or dependencies |
+
+### Angular
+
+```
+type(scope): message
+```
+
+Same types as Conventional except without `chore`.
+
+### Gitmoji
+
+```
+emoji message
+```
+
+| Emoji | Description |
+|-------|-------------|
+| ✨ | New feature |
+| 🐛 | Bug fix |
+| 📚 | Documentation |
+| 💅 | Style |
+| ♻️ | Refactor |
+| ⚡ | Performance |
+| ✅ | Test |
+| 🔧 | Chore |
+| 🚀 | Deploy |
+
+List presets from the CLI:
+
+```bash
+commit-it presets
+```
+
+---
 
 ## AI Commit Messages
 
-Generate a commit message from your staged diff:
-
-```bash
-commit-it --ai
-```
+Generate a commit message from your staged diff using OpenAI or Anthropic.
 
 ### Setup
 
-Set the API key for your provider:
+1. Set your API key:
 
 ```bash
 # OpenAI (default model: gpt-4o-mini)
@@ -337,110 +716,222 @@ export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Enable in config:
+2. Enable in config:
 
 ```typescript
 ai: {
   enabled: true,
-  provider: 'auto',    // Checks OPENAI_API_KEY first, then ANTHROPIC_API_KEY
-  model: 'gpt-4o-mini', // Optional override
+  provider: 'auto',      // Checks OPENAI_API_KEY first, then ANTHROPIC_API_KEY
+  model: 'gpt-4o-mini',  // Optional: override default model
 }
 ```
 
-The AI analyzes up to 8000 characters of your staged diff and suggests a type, scope, message, body, and breaking change description. You can accept or decline the suggestion before proceeding through the normal flow.
+### Usage
+
+```bash
+# Stage changes, then generate
+git add .
+commit-it --ai
+```
+
+**What happens:**
+
+1. The staged diff (up to 8000 chars) is sent to the AI provider
+2. The AI returns a JSON suggestion with `type`, `scope`, `message`, `body`, and optional `breaking`
+3. You see the suggestion and choose to accept or decline
+4. If accepted, the values pre-fill the interactive flow
+5. If declined, you proceed manually
+
+```
+🤖 Generating commit message with AI...
+
+✨ AI suggestion:
+   fix(auth): resolve token refresh race condition
+   Tokens were being refreshed concurrently leading to 401 errors...
+
+Use this AI-generated message? (Y/n)
+```
+
+The AI also receives the current branch name and available types from your preset for better suggestions.
+
+### Disable AI per-commit
+
+```bash
+# Use AI even if not in config
+commit-it --ai
+
+# Disable AI even if enabled in config
+commit-it --no-ai
+```
+
+---
 
 ## GitHub Integration
 
-commit-it integrates with GitHub via the [`gh` CLI](https://cli.github.com).
+commit-it uses the [GitHub CLI](https://cli.github.com/) (`gh`) for all GitHub features. Every GitHub feature degrades gracefully -- if `gh` is not installed or not authenticated, commit-it continues without GitHub context.
 
 ### Setup
 
 ```bash
 # Install
-brew install gh        # macOS
+brew install gh          # macOS
 winget install GitHub.cli  # Windows
+sudo apt install gh        # Debian/Ubuntu
 
 # Authenticate
 gh auth login
 ```
 
-### What It Does
+### Features
 
-- **PR context detection** — Detects the current PR for your branch and reads its labels
-- **Type suggestion from labels** — `bug` label suggests `fix`, `feature` suggests `feat`, `docs` suggests `docs`
-- **Scope extraction from labels** — Labels like `scope:api` or `area:core` become scope suggestions (configurable patterns)
-- **Issue search and linking** — Search issues by number or keyword, select action (`Closes`, `Fixes`, `Resolves`, `Ref`)
-- **Branch creation** — Create branches named from issue numbers and titles (e.g. `42-43-add-oauth-fix-redirect`)
+**PR context detection** -- Detects the current PR for your branch and reads its labels:
 
-Pass `--no-github` to skip all GitHub API calls for faster local-only commits.
+```
+# If your branch has a PR with label "bug":
+Select commit type: fix (pre-selected from PR label)
+```
+
+**Type suggestion from labels:**
+
+| PR Label | Suggested Type |
+|----------|---------------|
+| `bug` | `fix` |
+| `feature` | `feat` |
+| `docs` | `docs` |
+
+**Scope extraction from labels** -- Labels matching your `scopeLabelPatterns` become scope suggestions:
+
+```
+# PR has label "scope:auth" and config has pattern "scope:"
+Select scope: auth (from PR label)
+```
+
+**Issue search and linking** -- Search issues during commit, attach closing references:
+
+```
+Reference a GitHub issue? Yes
+Search issues: login
+  #42 - Fix login redirect          bug, auth
+  #38 - Login page slow             perf
+  Skip
+> #42 - Fix login redirect
+
+How should this issue be referenced?
+  Closes    (auto-close when merged)
+  Fixes     (auto-close when merged)
+  Resolves  (auto-close when merged)
+  Ref       (just mention, no auto-close)
+```
+
+Multiple issues can be linked to a single commit. Each gets its own footer line:
+
+```
+Closes #42
+Fixes #38
+```
+
+**Branch creation from issues:**
+
+```bash
+commit-it branch
+# Search: oauth
+# Select: #42 - Add OAuth support, #15 - Fix redirect
+# Branch: 15-42-add-oauth-support-and-fix-redirect
+```
+
+**Co-author discovery** -- Fetches repo collaborators (up to 10) as co-author candidates.
+
+**Disable GitHub:**
+
+```bash
+# Per-command
+commit-it --no-github
+
+# In config
+github: {
+  enabled: false,
+}
+```
+
+---
 
 ## Git Hook
 
-Install a `commit-msg` hook that validates every commit:
+Install a `commit-msg` hook that validates every `git commit` automatically:
 
 ```bash
 commit-it install-hook
 ```
 
-This writes a shell script to `.git/hooks/commit-msg` that runs `commit-it validate --file "$1"`. It looks for `commit-it` on `PATH` first, then falls back to `npx commit-it`.
+This creates `.git/hooks/commit-msg` with a script that runs `commit-it validate --file "$1"`. The script:
+
+1. Checks for `commit-it` on `PATH`
+2. Falls back to `npx commit-it`
+3. Skips validation with a warning if neither is found
 
 ```bash
 # Remove the hook
 commit-it uninstall-hook
 
-# Overwrite an existing non-commit-it hook
+# Force-overwrite a non-commit-it hook
 commit-it install-hook --force
 ```
 
-If a `commit-msg` hook already exists and wasn't installed by commit-it, you'll be prompted to use `--force` or manually add `commit-it validate --file "$1"` to your existing hook.
+If a `commit-msg` hook already exists and wasn't installed by commit-it, you'll see:
+
+```
+✗ A commit-msg hook already exists
+  Use --force to overwrite, or manually add commit-it to your hook
+
+  Add this to your existing hook:
+    commit-it validate --file "$1"
+```
+
+---
 
 ## Shell Alias
-
-Set up a shell alias so you can type `commit` (or any name you choose) instead of `commit-it`:
 
 ```bash
 commit-it setup-alias
 ```
 
-This is also offered during `commit-it init`. It will:
+Walks you through adding a shell alias so you can type `commit` (or any name) instead of `commit-it`:
 
-1. Ask which shell you use (auto-detects from `$SHELL`)
-2. Ask for an alias name (default: `commit`)
-3. Append the alias to your shell config file
-4. Show instructions to activate it
+1. Detects your shell from `$SHELL`
+2. Asks for an alias name (default: `commit`)
+3. Previews the line to append
+4. Writes to your shell config
 
-Supported shells:
-
-| Shell | Config File | Alias Format |
-|---|---|---|
+| Shell | Config File | Format |
+|-------|-------------|--------|
 | Zsh | `~/.zshrc` | `alias commit='commit-it'` |
 | Bash | `~/.bashrc` | `alias commit='commit-it'` |
 | Fish | `~/.config/fish/config.fish` | `alias commit 'commit-it'` |
 
-After setup, activate immediately with:
+After setup:
 
 ```bash
-source ~/.zshrc    # or ~/.bashrc, etc.
+source ~/.zshrc   # activate immediately
+
+commit            # interactive commit
+commit --ai       # AI-generated commit
+commit branch     # create branch from issues
 ```
 
-Then use your alias:
+This is also offered during `commit-it init`.
 
-```bash
-commit             # interactive commit (same as commit-it)
-commit --ai        # AI-generated commit
-commit branch      # create branch from issues
-```
+---
 
 ## Validation Rules
 
 The validator checks these rules (all configurable):
 
 | Rule | Default | Level | Description |
-|---|---|---|---|
+|------|---------|-------|-------------|
 | `header-max-length` | 72 chars | error | First line must not exceed max length |
 | `body-max-line-length` | 100 chars | warning | Body lines should not exceed max length |
-| `conventional-format` | required | error | Must follow `type(scope): subject` format |
-| `blank-line-after-header` | required | error | Second line must be blank |
+| `conventional-format` | on | error | Must follow `type(scope): subject` format |
+| `blank-line-after-header` | on | error | Second line must be blank |
 | `scope-required` | off | error | Scope is mandatory |
 | `body-required` | off | error | Body is mandatory |
 | `issue-required` | off | error | At least one issue reference required |
@@ -450,203 +941,1062 @@ The validator checks these rules (all configurable):
 | `subject-no-leading-capital` | off | warning | Subject should not start with uppercase |
 | Custom rules | none | configurable | Your own regex-based rules |
 
+**Recognized footer tokens** (parsed correctly and not treated as body text):
+
+`BREAKING CHANGE`, `Co-authored-by`, `Closes`, `Fixes`, `Resolves`, `Ref`, `Signed-off-by`, `Acked-by`, `Reviewed-by`, `Tested-by`, `Cc`
+
+---
+
 ## Scope Suggestions
 
-Scopes are suggested from three sources (in priority order):
+Scopes are suggested from two sources during the interactive flow, in priority order:
 
-1. **Config `scopeMap`** — Glob patterns matched against changed files
-2. **GitHub labels** — Labels matching `scopeLabelPatterns` prefixes (e.g. `scope:api` → `api`)
-3. **File paths** — Directory names extracted from changed files (e.g. `src/services/git.ts` → `services`)
+### 1. Config `scopeMap` (highest priority)
 
-All sources are deduplicated. Config scopes take priority over label scopes, which take priority over path scopes.
-
-## Co-authors
-
-### From Config Aliases
-
-Define aliases in your config:
+Glob patterns matched against changed files using [micromatch](https://github.com/micromatch/micromatch):
 
 ```typescript
-coauthors: {
-  alice: 'Alice Smith <alice@example.com>',
-  bob: 'Bob Jones <bob@example.com>',
+scopeMap: {
+  'src/cli/**': 'cli',            // Matches src/cli/index.ts, src/cli/foo/bar.ts
+  'src/services/**': 'core',      // Matches src/services/git.ts
+  'src/config/**': 'config',
+  'packages/web/src/**': 'web',   // Monorepo package
+  '*.md': 'docs',                 // Root markdown files
 }
 ```
 
-Use via CLI flag:
+When you edit `src/cli/commands.ts`, the scope `cli` is suggested.
 
-```bash
-commit-it --co-author alice
+### 2. GitHub PR labels
+
+Labels on the current PR matching your `scopeLabelPatterns` prefixes:
+
+```typescript
+github: {
+  scopeLabelPatterns: ['scope:', 'area:', 'component:'],
+}
 ```
 
-### From GitHub Collaborators
+A PR with label `scope:auth` suggests scope `auth`. Labels are shown with their GitHub color in the terminal.
 
-During the interactive flow, selecting "Add co-authors?" fetches collaborators from the GitHub API (up to 10) and presents them for selection.
+Both sources are deduplicated by value. Config scopes take priority over label scopes.
 
-### Manual Entry
+---
 
-You can also type a co-author manually in `Name <email>` format during the interactive flow.
+## Co-authors
 
-Co-authors are appended as `Co-authored-by:` trailers in the commit message footer.
+Co-authors are added as `Co-authored-by:` trailer lines in the commit message footer, which GitHub recognizes for contribution attribution.
+
+### From config aliases
+
+```typescript
+// commit.config.ts
+coauthors: {
+  alice: 'Alice Smith <alice@example.com>',
+  bob: 'Bob Jones <bob@example.com>',
+  'frontend-team': 'Frontend Team <frontend@company.com>',
+}
+```
+
+```bash
+# Use alias from CLI
+commit-it -c alice
+
+# Or full format
+commit-it -c "Alice Smith <alice@example.com>"
+```
+
+### From GitHub collaborators
+
+During the interactive flow, "Add co-authors?" fetches up to 10 collaborators from the repo via the GitHub API and presents them for multi-select.
+
+### Manual entry
+
+You can also type a co-author in `Name <email>` format when prompted.
+
+### Result in commit
+
+```
+feat(auth): add OAuth support
+
+Implements Google and GitHub OAuth providers.
+
+Closes #42
+
+Co-authored-by: Alice Smith <alice@example.com>
+Co-authored-by: Bob Jones <bob@example.com>
+```
+
+---
+
+## Commit Message Templates
+
+commit-it includes a template engine with Mustache-like syntax for formatting commit headers:
+
+**Placeholders:** `{{type}}`, `{{scope}}`, `{{message}}`, `{{body}}`, `{{breaking}}`, `{{issues}}`, `{{coauthors}}`
+
+**Conditional sections:** `{{#field}}content{{/field}}` -- only rendered if `field` has a value.
+
+Default templates per preset:
+
+| Preset | Template |
+|--------|----------|
+| `conventional` | `{{type}}{{#scope}}({{scope}}){{/scope}}{{#breaking}}!{{/breaking}}: {{message}}` |
+| `angular` | `{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}` |
+| `gitmoji` | `{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}` |
+
+Override with the `template` config option:
+
+```typescript
+export default defineConfig({
+  template: '{{type}}[{{scope}}]: {{message}}',  // Custom bracket style
+})
+```
+
+---
 
 ## Programmatic API
 
-commit-it exports all core services for use in scripts and tools:
+Every feature is importable for use in scripts, CI pipelines, custom tools, or your own CLIs. Install as a dependency:
 
-```typescript
-import {
-  // Config
-  defineConfig, loadConfig, getDefaultConfig,
-
-  // Presets
-  getPreset, listPresets, presets,
-
-  // Commit flows
-  interactiveCommit, directCommit,
-
-  // Git operations
-  createCommit, GitService,
-
-  // GitHub
-  GitHubService,
-
-  // AI
-  generateCommitMessage, isAIAvailable,
-
-  // Validation
-  validateCommitMessage, parseCommitMessage, formatValidationResult,
-  getDefaultValidationConfig,
-
-  // Templates
-  renderTemplate, buildFullMessage, DEFAULT_TEMPLATES,
-
-  // Co-authors
-  parseCoAuthor, formatCoAuthor, formatCoAuthors,
-  getAllCoAuthors, getCoAuthorsFromConfig,
-
-  // Scopes
-  getAllScopeSuggestions, getScopesFromConfig,
-  getScopesFromPaths, getScopesFromLabels,
-
-  // Format
-  FormatValidator,
-} from 'commit-it'
+```bash
+npm install commit-it
 ```
 
-### Creating a Commit Programmatically
+### Direct Commit
+
+Create commits non-interactively. Validates against your config before committing.
 
 ```typescript
-import { GitService } from 'commit-it'
+import { directCommit } from 'commit-it'
 
-const git = new GitService()
-
-const result = await git.createCommit({
+// Minimal commit
+const result = await directCommit({
   type: 'feat',
+  message: 'add user authentication',
+  dryRun: true,
+})
+console.log(result.hash)    // "dry-run"
+console.log(result.message) // "feat: add user authentication"
+
+// Full-featured commit
+const result2 = await directCommit({
+  type: 'feat',
+  message: 'redesign user API',
   scope: 'api',
-  message: 'add user endpoint',
-  body: 'Implements GET /users/:id',
-  breaking: undefined,
-  coauthors: ['Co-authored-by: Alice <alice@example.com>'],
-  issueRefs: [{ action: 'Closes', number: 42 }],
-  dryRun: false,
-  stage: false,
+  body: 'Complete rewrite of REST endpoints for v2',
+  breaking: true,
+  breakingDescription: 'All endpoints now require Bearer token auth',
+  issueRefs: [
+    { action: 'Closes', number: 42 },
+    { action: 'Ref', number: 10 },
+  ],
+  coAuthor: 'alice',   // config alias
+  stageAll: true,
   amend: false,
+  dryRun: false,
+})
+// result2.message:
+//   feat(api)!: redesign user API
+//
+//   Complete rewrite of REST endpoints for v2
+//
+//   BREAKING CHANGE: All endpoints now require Bearer token auth
+//
+//   Closes #42
+//   Ref #10
+//
+//   Co-authored-by: Alice Smith <alice@example.com>
+
+// Breaking change with default description
+const result3 = await directCommit({
+  type: 'feat',
+  message: 'change config format',
+  breaking: true,
+  dryRun: true,
+})
+// result3.message includes "BREAKING CHANGE: breaking change"
+```
+
+### Interactive Commit
+
+Launch the full interactive flow programmatically:
+
+```typescript
+import { interactiveCommit } from 'commit-it'
+
+const result = await interactiveCommit({
+  preset: 'conventional',  // override config preset
+  skipGithub: false,
+  dryRun: false,
+  stageAll: true,
+  amend: false,
+  breaking: false,
+  useAI: true,
+  coAuthor: 'bob',
 })
 
 console.log(result.hash)    // commit SHA
 console.log(result.message) // full formatted message
 ```
 
-### Validating a Message
+### Validate Commit Messages
 
 ```typescript
-import { validateCommitMessage } from 'commit-it'
+import {
+  validateCommitMessage,
+  formatValidationResult,
+  getDefaultValidationConfig,
+} from 'commit-it'
 
+// Validate with custom rules
 const result = validateCommitMessage('feat(cli): add new command', {
-  enabled: true,
   maxHeaderLength: 72,
   requireScope: true,
+  allowedTypes: ['feat', 'fix', 'docs'],
+  allowedScopes: ['cli', 'api', 'core'],
+  noTrailingPeriod: true,
+  customRules: [
+    {
+      name: 'no-wip',
+      pattern: '\\bWIP\\b',
+      message: 'WIP not allowed',
+      level: 'error',
+      invert: true,
+    },
+  ],
 })
 
 console.log(result.valid)    // true
 console.log(result.errors)   // []
 console.log(result.warnings) // []
+
+// Invalid message
+const bad = validateCommitMessage(
+  'This is way too long and does not follow conventional format at all and keeps going forever',
+  { maxHeaderLength: 72 },
+)
+console.log(bad.valid)   // false
+console.log(bad.errors)  // [{ rule: 'header-max-length', message: '...', level: 'error', line: 1 }]
+
+// Format for display
+console.log(formatValidationResult(bad))
+// ✗ Errors:
+//   • header-max-length (line 1): Header exceeds 72 characters (90)
+
+// Get the default validation config
+const defaults = getDefaultValidationConfig()
+// { enabled: true, maxHeaderLength: 72, maxBodyLineLength: 100, ... }
 ```
 
-### Parsing a Commit Message
+### Parse Commit Messages
+
+Extract type, scope, subject, body, footer, breaking status, and issue references from any commit message:
 
 ```typescript
 import { parseCommitMessage } from 'commit-it'
 
-const parsed = parseCommitMessage('feat(cli)!: redesign interface\n\nNew layout\n\nBREAKING CHANGE: Old API removed\n\nCloses #42')
-
+// Simple message
+const simple = parseCommitMessage('feat(cli): add command')
 // {
-//   header: 'feat(cli)!: redesign interface',
+//   header: 'feat(cli): add command',
 //   type: 'feat',
 //   scope: 'cli',
-//   subject: 'redesign interface',
-//   body: 'New layout',
-//   footer: 'BREAKING CHANGE: Old API removed\nCloses #42',
+//   subject: 'add command',
+//   body: undefined,
+//   footer: undefined,
+//   isBreaking: false,
+//   issues: [],
+// }
+
+// Full message with body, breaking change, and issues
+const full = parseCommitMessage(
+  'feat(api)!: redesign endpoints\n\nComplete rewrite for v2\n\nBREAKING CHANGE: Auth required\n\nCloses #42\nFixes #99'
+)
+// {
+//   header: 'feat(api)!: redesign endpoints',
+//   type: 'feat',
+//   scope: 'api',
+//   subject: 'redesign endpoints',
+//   body: 'Complete rewrite for v2',
+//   footer: 'BREAKING CHANGE: Auth required\nCloses #42\nFixes #99',
 //   isBreaking: true,
-//   issues: [42],
+//   issues: [42, 99],
+// }
+
+// Non-conventional message (still parsed)
+const plain = parseCommitMessage('just a plain message')
+// { type: '', scope: undefined, subject: 'just a plain message', ... }
+```
+
+### Format Validation
+
+Validate against a specific preset's format:
+
+```typescript
+import { FormatValidator, getPreset } from 'commit-it'
+
+const preset = getPreset('conventional')
+const validator = new FormatValidator(preset)
+
+// Validate full message format
+validator.validateMessage('feat(cli): add command')
+// { valid: true }
+
+validator.validateMessage('not a conventional commit')
+// { valid: false, error: 'Message does not match Conventional Commits format' }
+
+// Validate individual fields
+validator.validateType('feat')     // true
+validator.validateType('yolo')     // false
+validator.validateScope('cli')     // true (no scope restrictions in conventional)
+
+// List available options
+validator.getAvailableTypes()
+// [
+//   { value: 'feat', desc: '✨ A new feature' },
+//   { value: 'fix', desc: '🐛 A bug fix' },
+//   { value: 'docs', desc: '📚 Documentation only changes' },
+//   ...
+// ]
+
+validator.getAvailableScopes()     // [] (conventional has no scope restrictions)
+
+// Format a commit message from components
+validator.formatMessage({
+  type: 'feat',
+  scope: 'api',
+  message: 'add endpoint',
+  body: 'Implements GET /users',
+  footer: 'Closes #42',
+})
+// "feat(api): add endpoint\n\nImplements GET /users\n\nCloses #42"
+```
+
+### Git Operations
+
+Full git operations via the `GitService` wrapper around [simple-git](https://github.com/steveukx/git-js):
+
+```typescript
+import { GitService, createCommit } from 'commit-it'
+
+const git = new GitService()                // uses process.cwd()
+const git2 = new GitService('/path/to/repo') // or specify a directory
+
+// Branch info
+await git.getBranchName()
+// "feature/new-api"
+
+// File status
+await git.getStatus()
+// { staged: ['src/index.ts'], unstaged: ['README.md'] }
+
+await git.getChangedFiles()
+// ['src/index.ts', 'README.md', 'package.json']
+
+// Staged diff (for AI generation)
+await git.getStagedDiff()
+// "diff --git a/src/index.ts b/src/index.ts\n..."
+
+// Stage all files
+await git.stageAll()
+
+// Last commit info (parsed into components)
+const last = await git.getLastCommit()
+// {
+//   type: 'feat', scope: 'cli', message: 'add command',
+//   body: undefined, breaking: undefined, isBreaking: false,
+//   hash: 'abc1234', fullMessage: 'feat(cli): add command'
+// }
+
+// Branch operations
+await git.branchExists('feature-x')      // true/false
+await git.createOrSwitchBranch('new-branch')
+// { created: true } or { created: false } if already exists
+
+// Create a formatted commit
+const result = await git.createCommit({
+  type: 'fix',
+  scope: 'auth',
+  message: 'resolve token refresh',
+  body: 'Tokens now refresh 5 minutes before expiry',
+  breaking: undefined,                    // or 'description of breaking change'
+  issueRefs: [
+    { action: 'Fixes', number: 99 },
+    { action: 'Ref', number: 50 },
+  ],
+  coauthors: [
+    'Co-authored-by: Alice <alice@example.com>',
+  ],
+  dryRun: false,
+  stage: false,                           // true to run git add . first
+  amend: false,                           // true to amend last commit
+})
+// result.hash = "abc1234..."
+// result.message = "fix(auth): resolve token refresh\n\n..."
+
+// Convenience function (creates a GitService internally)
+const result2 = await createCommit({
+  type: 'docs',
+  message: 'update README',
+})
+```
+
+### GitHub Operations
+
+Interact with GitHub via the `gh` CLI:
+
+```typescript
+import { GitHubService } from 'commit-it'
+
+const github = new GitHubService()          // enabled by default
+const github2 = new GitHubService(false)    // disabled (all methods return empty)
+
+// Search issues
+const issues = await github.searchIssues('login bug')
+// [
+//   { number: 42, title: 'Fix login redirect', labels: [...], state: 'open' },
+//   { number: 38, title: 'Login page slow', labels: [...], state: 'open' },
+// ]
+
+// Get a specific issue
+const issue = await github.getIssue(42)
+// { number: 42, title: 'Fix login redirect', labels: [...], state: 'open' }
+
+// Current PR for this branch
+const pr = await github.getCurrentPR()
+// { number: 10, title: 'Add OAuth', labels: [...], state: 'open' }
+
+// Get a specific PR
+const pr2 = await github.getPR(10)
+
+// List repo labels
+const labels = await github.getLabels()
+// ['bug', 'feature', 'scope:auth', 'scope:api', ...]
+
+// List collaborators
+const collabs = await github.getCollaborators()
+// ['alice', 'bob', 'charlie']
+
+// Detect full context for the current branch
+const context = await github.detectContext()
+// {
+//   currentPR: { number: 10, ... },
+//   relatedIssues: [],
+//   suggestedType: 'fix',       // from PR labels
+//   prLabels: [{ name: 'bug', color: 'ff0000' }],
+// }
+
+// Create branch name from issues
+const branch = await github.createBranchName([42, 15])
+// "15-42-fix-login-redirect-and-session-timeout"
+
+const branch2 = await github.createBranchName([42], 'wip')
+// "42-fix-login-redirect-wip"
+
+// Slugify utility
+github.slugify('Fix Login Redirect!')
+// "fix-login-redirect"
+```
+
+### Scope Suggestions (API)
+
+Get scope suggestions from file paths and labels programmatically:
+
+```typescript
+import {
+  getScopesFromConfig,
+  getScopesFromLabels,
+  getAllScopeSuggestions,
+} from 'commit-it'
+
+// From file paths + config scopeMap
+const configScopes = getScopesFromConfig(
+  ['src/cli/index.ts', 'src/api/users.ts', 'src/cli/commands.ts'],
+  {
+    'src/cli/**': 'cli',
+    'src/api/**': 'api',
+    'src/services/**': 'core',
+  },
+)
+// [
+//   { value: 'cli', source: 'config' },
+//   { value: 'api', source: 'config' },
+// ]
+// Note: 'cli' is deduplicated even though two files matched
+
+// From GitHub PR labels
+const labelScopes = getScopesFromLabels(
+  [
+    { name: 'scope:auth', color: 'ff0000' },
+    { name: 'area:api', color: '00ff00' },
+    { name: 'bug', color: '0000ff' },         // doesn't match any pattern
+  ],
+  ['scope:', 'area:'],
+)
+// [
+//   { value: 'auth', source: 'label', label: 'scope:auth', color: 'ff0000' },
+//   { value: 'api', source: 'label', label: 'area:api', color: '00ff00' },
+// ]
+
+// All sources combined and deduplicated (config wins over labels)
+const all = getAllScopeSuggestions(
+  ['src/api/users.ts'],
+  { 'src/api/**': 'api' },
+  [{ name: 'scope:api', color: '00ff00' }, { name: 'scope:auth', color: 'ff0000' }],
+  ['scope:'],
+)
+// [
+//   { value: 'api', source: 'config' },       // config wins over label
+//   { value: 'auth', source: 'label', ... },   // only from labels
+// ]
+```
+
+### Co-author Utilities
+
+Parse, format, and collect co-authors from multiple sources:
+
+```typescript
+import {
+  parseCoAuthor,
+  formatCoAuthor,
+  formatCoAuthors,
+  getCoAuthorsFromConfig,
+  getAllCoAuthors,
+} from 'commit-it'
+
+// Parse a "Name <email>" string
+parseCoAuthor('Alice Smith <alice@example.com>')
+// { name: 'Alice Smith', email: 'alice@example.com', source: 'manual' }
+
+parseCoAuthor('invalid string')
+// null
+
+// Format for commit footer
+formatCoAuthor({ name: 'Alice', email: 'alice@example.com', source: 'manual' })
+// "Co-authored-by: Alice <alice@example.com>"
+
+// Format multiple
+formatCoAuthors([
+  { name: 'Alice', email: 'alice@example.com', source: 'manual' },
+  { name: 'Bob', email: 'bob@example.com', source: 'manual' },
+])
+// "Co-authored-by: Alice <alice@example.com>\nCo-authored-by: Bob <bob@example.com>"
+
+// From config aliases
+const fromConfig = getCoAuthorsFromConfig({
+  alice: 'Alice Smith <alice@example.com>',
+  bob: 'Bob Jones <bob@example.com>',
+})
+// [
+//   { name: 'Alice Smith', email: 'alice@example.com', alias: 'alice', source: 'config' },
+//   { name: 'Bob Jones', email: 'bob@example.com', alias: 'bob', source: 'config' },
+// ]
+
+// All sources (config + GitHub collaborators, deduplicated by email)
+const all = await getAllCoAuthors(
+  { alice: 'Alice Smith <alice@example.com>' },  // config aliases
+  true,  // include GitHub collaborators
+)
+// Config co-authors first, then GitHub collaborators (deduped)
+```
+
+### Template Engine
+
+Render commit message templates with variable substitution and conditional sections:
+
+```typescript
+import { renderTemplate, buildFullMessage, DEFAULT_TEMPLATES } from 'commit-it'
+
+// Simple placeholder substitution
+renderTemplate('{{type}}: {{message}}', {
+  type: 'feat',
+  message: 'add feature',
+})
+// "feat: add feature"
+
+// Conditional sections: {{#field}}...{{/field}} only renders if field has a value
+renderTemplate('{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}', {
+  type: 'feat',
+  scope: 'cli',
+  message: 'add command',
+})
+// "feat(cli): add command"
+
+renderTemplate('{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}', {
+  type: 'docs',
+  message: 'update README',
+})
+// "docs: update README"   (scope section omitted)
+
+// Breaking change indicator
+renderTemplate('{{type}}{{#breaking}}!{{/breaking}}: {{message}}', {
+  type: 'feat',
+  message: 'change API',
+  breaking: 'removes old endpoints',
+})
+// "feat!: change API"
+
+// Build full message with header + body + footer
+buildFullMessage({
+  type: 'feat',
+  scope: 'api',
+  message: 'add user endpoint',
+  body: 'Implements GET /users/:id with pagination support',
+  breaking: 'Changes response format from array to object',
+  issues: 'Closes #42\nRef #10',
+  coauthors: 'Co-authored-by: Alice <alice@example.com>',
+})
+// feat(api)!: add user endpoint
+//
+// Implements GET /users/:id with pagination support
+//
+// BREAKING CHANGE: Changes response format from array to object
+//
+// Closes #42
+// Ref #10
+//
+// Co-authored-by: Alice <alice@example.com>
+
+// Minimal message
+buildFullMessage({ type: 'fix', message: 'resolve bug' })
+// "fix: resolve bug"
+
+// Use a custom template
+buildFullMessage(
+  { type: 'feat', scope: 'ui', message: 'add button' },
+  '{{type}}[{{scope}}] {{message}}',
+)
+// "feat[ui] add button"
+
+// Access default templates
+DEFAULT_TEMPLATES.conventional
+// "{{type}}{{#scope}}({{scope}}){{/scope}}{{#breaking}}!{{/breaking}}: {{message}}"
+
+DEFAULT_TEMPLATES.angular
+// "{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}"
+
+DEFAULT_TEMPLATES.gitmoji
+// "{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}"
+```
+
+### AI Generation
+
+Generate commit messages from diffs programmatically:
+
+```typescript
+import { generateCommitMessage, isAIAvailable, loadConfig } from 'commit-it'
+
+const config = await loadConfig()
+
+// Check if AI is available (provider configured + API key present)
+if (isAIAvailable(config)) {
+  const diff = await git.getStagedDiff()
+
+  const suggestion = await generateCommitMessage(diff, config, {
+    branchName: 'feature/new-api',
+    existingTypes: ['feat', 'fix', 'docs', 'refactor'],
+  })
+
+  if (suggestion) {
+    console.log(suggestion.type)     // "feat"
+    console.log(suggestion.scope)    // "api"
+    console.log(suggestion.message)  // "add user endpoint"
+    console.log(suggestion.body)     // "Implements GET /users/:id..."
+    console.log(suggestion.breaking) // undefined
+  }
+}
+```
+
+Returns `null` if AI is not configured, the API call fails, or the response can't be parsed.
+
+### Config Utilities
+
+```typescript
+import { defineConfig, loadConfig, getDefaultConfig } from 'commit-it'
+
+// Type-safe config helper for commit.config.ts files
+const config = defineConfig({
+  preset: 'conventional',
+  scopeMap: { 'src/**': 'core' },
+})
+
+// Load resolved config (file + defaults merged)
+const resolved = await loadConfig()
+
+// Get default config (no file needed)
+const defaults = getDefaultConfig()
+// {
+//   preset: 'conventional',
+//   scopeMode: 'single',
+//   defaults: { scope: '', includeBody: true },
+//   plugins: [],
+//   validation: { enabled: true, maxHeaderLength: 72, ... },
+//   ai: { enabled: false, provider: 'auto' },
+//   github: { enabled: true, scopeLabelPatterns: [...], ... },
 // }
 ```
 
-### Generating an AI Message
+### Preset Utilities
 
 ```typescript
-import { generateCommitMessage, loadConfig } from 'commit-it'
+import { getPreset, listPresets, presets } from 'commit-it'
 
-const config = await loadConfig()
-const diff = '...' // staged diff output
+// List all preset names
+listPresets()
+// ['conventional', 'angular', 'gitmoji']
 
-const suggestion = await generateCommitMessage(diff, config, {
-  branchName: 'feature/new-api',
-  existingTypes: ['feat', 'fix', 'docs'],
-})
+// Get a preset by name
+const preset = getPreset('conventional')
+preset.name       // "Conventional Commits"
+preset.template   // "{type}({scope}): {message}"
+preset.types      // [{ value: 'feat', desc: '✨ A new feature' }, ...]
+preset.scopes     // []
+preset.validator   // (msg: string) => boolean
 
-// { type: 'feat', scope: 'api', message: 'add user endpoint', body: '...', breaking: undefined }
+// Throws on unknown preset
+getPreset('unknown')
+// Error: Unknown preset: unknown
+
+// Access presets directly
+presets.conventional.types[0]  // { value: 'feat', desc: '✨ A new feature' }
+presets.gitmoji.types[0]       // { value: '✨', desc: 'New feature' }
+presets.angular.name           // "Angular Style"
 ```
+
+### Full Type Reference
+
+```typescript
+import type {
+  Config,
+  CustomRule,
+  ValidationConfig,
+  DirectCommitOptions,
+  InteractiveOptions,
+  AICommitSuggestion,
+  CoAuthor,
+  CommitData,
+  CommitType,
+  Preset,
+  CommitOptions,
+  CommitResult,
+  IssueReference,
+  ParsedCommit,
+  CommitContext,
+  ScopeSuggestion,
+  TemplateData,
+  ParsedMessage,
+  ValidationIssue,
+  ValidationResult,
+  FormatValidationResult,
+} from 'commit-it'
+```
+
+---
+
+## Example Configurations
+
+Ready-to-use configurations are available in [`examples/configs/`](./examples/configs/):
+
+### Minimal (personal projects)
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+})
+```
+
+### AI-First (let the AI handle it)
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  ai: {
+    enabled: true,
+    provider: 'auto',
+    model: 'gpt-4o-mini',
+  },
+  scopeMap: {
+    'src/api/**': 'api',
+    'src/cli/**': 'cli',
+    'src/ui/**': 'ui',
+    'docs/**': 'docs',
+    'package.json': 'deps',
+  },
+  validation: {
+    enabled: true,
+    maxHeaderLength: 100,
+    customRules: [
+      {
+        name: 'no-wip',
+        pattern: '\\bWIP\\b',
+        message: 'Remove WIP before committing',
+        level: 'warning',
+        invert: true,
+      },
+    ],
+  },
+})
+```
+
+### Monorepo (multi-package)
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  scopeMap: {
+    'packages/core/**': 'core',
+    'packages/cli/**': 'cli',
+    'packages/web/**': 'web',
+    'packages/api/**': 'api',
+    'apps/admin/**': 'admin',
+    'docs/**': 'docs',
+  },
+  github: {
+    enabled: true,
+    scopeLabelPatterns: ['pkg:', 'package:'],
+  },
+  validation: {
+    enabled: true,
+    requireScope: true,
+    allowedScopes: ['core', 'cli', 'web', 'api', 'admin', 'docs', 'deps'],
+  },
+})
+```
+
+### Enterprise JIRA
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  github: { enabled: false },
+  ai: { enabled: false },
+  validation: {
+    enabled: true,
+    maxHeaderLength: 100,
+    requireScope: true,
+    requireBody: true,
+    allowedTypes: ['feat', 'fix', 'docs', 'refactor', 'test', 'chore'],
+    customRules: [
+      {
+        name: 'require-jira-ticket',
+        pattern: '[A-Z]{2,}-\\d+',
+        message: 'Must include JIRA ticket (e.g., PROJ-123)',
+        level: 'error',
+        invert: false,
+      },
+      {
+        name: 'no-wip',
+        pattern: '\\b(WIP|wip)\\b',
+        message: 'WIP commits not allowed',
+        level: 'error',
+        invert: true,
+      },
+    ],
+  },
+})
+```
+
+### Security-Focused
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  validation: {
+    enabled: true,
+    requireScope: true,
+    customRules: [
+      {
+        name: 'no-api-keys',
+        pattern: '\\b(api[_-]?key|apikey|api[_-]?secret)\\b',
+        message: 'Possible API key in commit message',
+        level: 'error',
+        invert: true,
+      },
+      {
+        name: 'no-passwords',
+        pattern: '\\b(password|passwd|pwd)\\s*[:=]',
+        message: 'Possible password in commit message',
+        level: 'error',
+        invert: true,
+      },
+      {
+        name: 'no-tokens',
+        pattern: '\\b(token|bearer|jwt)\\s*[:=]\\s*["\']?[A-Za-z0-9+/=]{20,}',
+        message: 'Possible token in commit message',
+        level: 'error',
+        invert: true,
+      },
+      {
+        name: 'no-private-keys',
+        pattern: 'BEGIN (RSA |DSA |EC )?PRIVATE KEY',
+        message: 'Private key detected in commit message',
+        level: 'error',
+        invert: true,
+      },
+    ],
+  },
+})
+```
+
+### Team Collaboration (pair/mob programming)
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  coauthors: {
+    alice: 'Alice Smith <alice@company.com>',
+    bob: 'Bob Jones <bob@company.com>',
+    charlie: 'Charlie Wilson <charlie@company.com>',
+    'frontend-team': 'Frontend Team <frontend@company.com>',
+    'backend-team': 'Backend Team <backend@company.com>',
+  },
+  github: {
+    enabled: true,
+    auto: {
+      detectIssues: true,
+      suggestReviewers: true,
+    },
+  },
+})
+```
+
+### Open Source (DCO sign-off)
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  github: {
+    enabled: true,
+    auto: { detectIssues: true, suggestReviewers: true },
+  },
+  validation: {
+    enabled: true,
+    customRules: [
+      {
+        name: 'require-signoff',
+        pattern: 'Signed-off-by: .+ <.+@.+>',
+        message: 'DCO sign-off required. Use: git commit -s',
+        level: 'error',
+        invert: false,
+      },
+      {
+        name: 'no-merge',
+        pattern: '^Merge (branch|pull request)',
+        message: 'Use rebase instead of merge commits',
+        level: 'error',
+        invert: true,
+      },
+    ],
+  },
+})
+```
+
+### Strict Validation
+
+```typescript
+import { defineConfig } from 'commit-it'
+
+export default defineConfig({
+  preset: 'conventional',
+  validation: {
+    enabled: true,
+    maxHeaderLength: 50,
+    maxBodyLineLength: 72,
+    requireScope: true,
+    requireBody: true,
+    requireIssue: true,
+    noTrailingPeriod: true,
+    noLeadingCapital: true,
+    allowedTypes: ['feat', 'fix', 'docs', 'refactor', 'test'],
+    allowedScopes: ['core', 'api', 'ui', 'db', 'auth', 'docs', 'test', 'deps'],
+    customRules: [
+      {
+        name: 'imperative-mood',
+        pattern: '^\\w+\\([^)]*\\): (add|fix|update|remove|refactor|improve|implement)',
+        message: 'Use imperative mood: "add" not "adds" or "added"',
+        level: 'error',
+        invert: false,
+      },
+      {
+        name: 'no-wip',
+        pattern: '\\b(WIP|wip|work in progress)\\b',
+        message: 'WIP commits not allowed',
+        level: 'error',
+        invert: true,
+      },
+      {
+        name: 'no-fixup',
+        pattern: '^fixup!',
+        message: 'Squash fixup commits before pushing',
+        level: 'error',
+        invert: true,
+      },
+    ],
+  },
+})
+```
+
+All example configs are in [`examples/configs/`](./examples/configs/) -- copy any to your project root as `commit.config.ts` and customize.
+
+---
 
 ## Architecture
 
 ```
 src/
-├── cli.ts                     CLI entry point, default command routing
-├── index.ts                   Public API exports
+├── cli.ts                       CLI entry point, default command routing
+├── index.ts                     Public API exports
 ├── commands/
-│   ├── branch.ts              Create branches from GitHub issues
-│   ├── commit.ts              Interactive commit command
-│   ├── config.ts              Print resolved config
-│   ├── hook.ts                Install/uninstall commit-msg hook
-│   ├── init.ts                Generate config file
-│   ├── presets.ts             List available presets
-│   └── validate.ts            Validate commit messages
+│   ├── alias.ts                 Shell alias setup (zsh/bash/fish)
+│   ├── branch.ts                Create branches from GitHub issues
+│   ├── commit.ts                Interactive and non-interactive commit
+│   ├── config.ts                Print resolved config
+│   ├── hook.ts                  Install/uninstall commit-msg hook
+│   ├── init.ts                  Generate config file interactively
+│   ├── presets.ts               List available presets
+│   └── validate.ts              Validate commit messages
 ├── config/
-│   └── index.ts               Config schema (Zod), loading (c12), defaults
+│   └── index.ts                 Config schema (Zod), loading (c12), defaults
 ├── presets/
-│   └── index.ts               Conventional, Angular, Gitmoji definitions
+│   └── index.ts                 Conventional, Angular, Gitmoji preset definitions
 ├── prompts/
-│   └── commitFlow.ts          Full interactive commit flow orchestration
+│   └── commitFlow.ts            Full interactive commit flow orchestration
 ├── services/
-│   ├── ai.ts                  AI generation (OpenAI/Anthropic via Vercel AI SDK)
-│   ├── coauthor.ts            Co-author parsing, formatting, GitHub lookup
-│   ├── format.ts              Preset-based format validation
-│   ├── git.ts                 Git operations (simple-git wrapper)
-│   ├── github.ts              GitHub CLI wrapper (gh)
-│   ├── scope.ts               Scope suggestions from paths, config, labels
-│   ├── template.ts            Mustache-like commit message templating
-│   └── validation.ts          Rule-based commit message validation
+│   ├── ai.ts                    AI generation (OpenAI/Anthropic via Vercel AI SDK)
+│   ├── coauthor.ts              Co-author parsing, formatting, GitHub lookup
+│   ├── format.ts                Preset-based format validation
+│   ├── git.ts                   Git operations (simple-git wrapper)
+│   ├── github.ts                GitHub CLI (gh) wrapper
+│   ├── scope.ts                 Scope suggestions from config map + labels
+│   ├── template.ts              Mustache-like commit message templating
+│   └── validation.ts            Rule-based commit message validation
 └── utils/
-    └── execFileNoThrow.ts     Child process helper
+    ├── commitTokens.ts          Shared footer token list and regex
+    └── execFileNoThrow.ts       Child process helpers (throw/no-throw)
 ```
 
-### Key Dependencies
+### Dependencies
 
 | Package | Purpose |
-|---|---|
+|---------|---------|
 | [@drizzle-team/brocli](https://github.com/drizzle-team/brocli) | CLI command framework |
 | [@clack/prompts](https://github.com/bombshell-dev/clack) | Interactive terminal prompts |
+| [@inquirer/search](https://github.com/SBoudrias/Inquirer.js) | Async search prompt (issue search) |
 | [simple-git](https://github.com/steveukx/git-js) | Git operations |
 | [c12](https://github.com/unjs/c12) | Config file loading (TS, JS, JSON, YAML, package.json) |
 | [ai](https://sdk.vercel.ai) | Vercel AI SDK for LLM integration |
@@ -654,6 +2004,8 @@ src/
 | [@ai-sdk/anthropic](https://www.npmjs.com/package/@ai-sdk/anthropic) | Anthropic provider |
 | [micromatch](https://github.com/micromatch/micromatch) | Glob pattern matching for scope maps |
 | [zod](https://zod.dev) | Config schema validation |
+
+---
 
 ## Development
 
@@ -664,46 +2016,44 @@ bun install
 # Build
 bun run build
 
-# Watch mode
+# Watch mode (rebuild on changes)
 bun run dev
 
 # Run tests
 bun test
 
+# Run tests with coverage
+bun run test:coverage
+
 # Run tests in watch mode
 bun run test:watch
 
-# Lint
+# Lint (check)
 bun run lint
 
-# Fix lint issues
+# Lint (auto-fix)
 bun run lint:fix
 
 # Type check
 bun run type-check
 ```
 
+---
+
 ## Troubleshooting
 
 ### GitHub integration not working
 
-Ensure `gh` CLI is installed and authenticated:
-
 ```bash
+# Check if gh is installed and authenticated
 gh auth status
 ```
 
-If not authenticated:
-
-```bash
-gh auth login
-```
-
-GitHub features degrade gracefully — if `gh` is unavailable, commit-it continues without GitHub context.
+If not authenticated, run `gh auth login`. GitHub features degrade gracefully -- if `gh` is unavailable, commit-it continues without GitHub context.
 
 ### AI generation not working
 
-1. Check your API key is set:
+1. Check your API key:
 
 ```bash
 echo $OPENAI_API_KEY
@@ -713,51 +2063,52 @@ echo $ANTHROPIC_API_KEY
 2. Ensure AI is enabled in config:
 
 ```typescript
-ai: {
-  enabled: true,
-  provider: 'auto',
-}
+ai: { enabled: true, provider: 'auto' }
 ```
 
-3. Ensure you have staged changes (AI generates from the staged diff).
+3. Ensure you have staged changes (`git add`). AI generates from the staged diff -- if nothing is staged, there's no diff to analyze.
 
 ### Validation hook not running
 
-Reinstall the hook:
-
 ```bash
+# Reinstall
 commit-it uninstall-hook
 commit-it install-hook
-```
 
-Verify the hook exists and is executable:
-
-```bash
+# Verify the hook exists and is executable
 ls -la .git/hooks/commit-msg
 ```
 
 ### Config not loading
 
-Print the resolved config to see what commit-it is using:
-
 ```bash
+# Print the resolved config
 commit-it config
 ```
 
-This shows the merged result of your config file and defaults.
+This shows the merged result of your config file and defaults. If you see only defaults, your config file may have a syntax error or be in an unsupported location.
 
-### Scopes not detected from file paths
+### Scopes not suggested
 
-Check that your `scopeMap` patterns use glob syntax matching your file paths:
+Check that your `scopeMap` patterns use valid glob syntax:
 
 ```typescript
 scopeMap: {
-  'src/cli/**': 'cli',       // Matches src/cli/index.ts, src/cli/foo/bar.ts
-  'src/services/*.ts': 'core', // Matches src/services/git.ts
+  'src/cli/**': 'cli',          // ** matches any depth
+  'src/services/*.ts': 'core',  // * matches single level
+  '*.md': 'docs',               // root-level markdown files
 }
 ```
 
-Path-based scope detection (without `scopeMap`) extracts directory names, skipping common non-descriptive directories like `src`, `lib`, `app`, `dist`, and `node_modules`.
+Run `commit-it config` to verify your `scopeMap` is loaded correctly.
+
+### Invalid type or scope errors in non-interactive mode
+
+```
+✗ Error creating commit: Invalid commit type "yolo". Valid types: feat, fix, ...
+```
+
+Check your preset and `allowedTypes`/`allowedScopes` in config. Use `commit-it presets` to see available types.
 
 ## License
 

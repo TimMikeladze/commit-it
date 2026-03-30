@@ -63,11 +63,12 @@ export const commitCommand = command({
 			console.log(
 				`✓ Commit ${opts.amend ? 'amended' : 'created'}: ${commit.hash}`,
 			)
-		} catch (error: any) {
-			if (error.message === 'Cancelled') {
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			if (message === 'Cancelled') {
 				process.exit(0)
 			}
-			console.error('✗ Error creating commit:', error.message)
+			console.error('✗ Error creating commit:', message)
 			process.exit(1)
 		}
 	},

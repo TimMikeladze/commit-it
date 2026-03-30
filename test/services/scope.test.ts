@@ -112,47 +112,18 @@ describe('Scope Service', () => {
 	})
 
 	describe('getScopesFromPaths', () => {
-		test('should extract scopes from directory names', () => {
+		test('should return empty (deprecated)', () => {
 			const scopes = getScopesFromPaths(['src/services/github.ts'])
-			expect(scopes.length).toBeGreaterThan(0)
-			const values = scopes.map((s) => s.value)
-			expect(values).toContain('services')
+			expect(scopes).toHaveLength(0)
 		})
 
-		test('should skip common non-descriptive directories', () => {
-			const scopes = getScopesFromPaths(['src/index.ts'])
-			const values = scopes.map((s) => s.value)
-			expect(values).not.toContain('src')
-		})
-
-		test('should handle multiple files and count frequency', () => {
+		test('should return empty for any input (deprecated)', () => {
 			const scopes = getScopesFromPaths([
 				'src/services/github.ts',
 				'src/services/git.ts',
 				'src/commands/commit.ts',
 			])
-			expect(scopes.length).toBeGreaterThan(0)
-			// services appears twice, should be first
-			expect(scopes[0]?.value).toBe('services')
-			expect(scopes[0]?.source).toBe('path')
-		})
-
-		test('should return empty for root files', () => {
-			const scopes = getScopesFromPaths(['README.md'])
 			expect(scopes).toHaveLength(0)
-		})
-
-		test('should limit to top 5 scopes', () => {
-			const scopes = getScopesFromPaths([
-				'dir1/file.ts',
-				'dir2/file.ts',
-				'dir3/file.ts',
-				'dir4/file.ts',
-				'dir5/file.ts',
-				'dir6/file.ts',
-				'dir7/file.ts',
-			])
-			expect(scopes.length).toBeLessThanOrEqual(5)
 		})
 	})
 
@@ -169,7 +140,6 @@ describe('Scope Service', () => {
 
 			const values = scopes.map((s) => s.value)
 			expect(values).toContain('api') // from label
-			expect(values).toContain('services') // from path
 		})
 
 		test('should prioritize config scopes over others', () => {

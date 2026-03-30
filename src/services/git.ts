@@ -1,4 +1,5 @@
 import { type SimpleGit, simpleGit } from 'simple-git'
+import { FOOTER_TOKEN_REGEX } from '../utils/commitTokens'
 
 export interface CommitResult {
 	hash: string
@@ -53,7 +54,7 @@ export class GitService {
 		return {
 			staged: status.staged || [],
 			unstaged: status.files
-				.filter((f) => !f.index || f.working_dir)
+				.filter((f) => f.working_dir !== ' ' && f.working_dir !== '')
 				.map((f) => f.path),
 		}
 	}
@@ -111,6 +112,9 @@ export class GitService {
 		// Parse conventional commit format: type(scope)!: message
 		const match = firstLine.match(/^(\w+)(?:\(([^)]+)\))?(!)?\s*:\s*(.+)$/)
 
+		const isFooterLine = (line: string): boolean =>
+			FOOTER_TOKEN_REGEX.test(line)
+
 		let type = 'chore'
 		let scope: string | undefined
 		let message = firstLine
@@ -130,20 +134,21 @@ export class GitService {
 		if (lines.length > 2) {
 			const bodyLines: string[] = []
 			let inBreaking = false
+			let inFooter = false
 
 			for (let i = 2; i < lines.length; i++) {
-				const line = lines[i]
-				if (!line) continue
+				const line = lines[i] ?? ''
 
 				if (line.startsWith('BREAKING CHANGE:')) {
 					inBreaking = true
+					inFooter = true
 					breaking = line.replace('BREAKING CHANGE:', '').trim()
-				} else if (inBreaking) {
+				} else if (inBreaking && !isFooterLine(line)) {
 					breaking = `${breaking || ''}\n${line}`
-				} else if (
-					!line.startsWith('Co-authored-by:') &&
-					!line.match(/^(Closes|Fixes|Resolves|Ref)\s+#\d+/)
-				) {
+				} else if (isFooterLine(line)) {
+					inFooter = true
+					inBreaking = false
+				} else if (!inFooter) {
 					bodyLines.push(line)
 				}
 			}
@@ -197,7 +202,7 @@ export class GitService {
 		}
 
 		// Format message with breaking change indicator
-		let message = `${options.type}`
+		let message = options.type
 		if (options.scope) {
 			message += `(${options.scope})`
 		}

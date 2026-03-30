@@ -100,11 +100,12 @@ export const branchCommand = command({
 			} else {
 				console.log(`✓ Switched to existing branch: ${branchName}`)
 			}
-		} catch (error: any) {
-			if (error.message === 'Cancelled') {
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			if (message === 'Cancelled') {
 				process.exit(0)
 			}
-			console.error('✗ Error:', error.message)
+			console.error('✗ Error:', message)
 			process.exit(1)
 		}
 	},

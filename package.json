@@ -1,7 +1,7 @@
 {
 	"name": "commit-it",
 	"version": "0.1.0",
-	"description": "cli tool to commit ",
+	"description": "Interactive CLI for creating standardized git commits with GitHub integration",
 	"bin": {
 		"commit-it": "./dist/cli.js",
 		"cit": "./dist/cli.js"

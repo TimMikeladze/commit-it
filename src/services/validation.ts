@@ -1,4 +1,5 @@
 import type { ValidationConfig } from '../config'
+import { FOOTER_TOKEN_REGEX } from '../utils/commitTokens'
 
 export interface ValidationIssue {
 	rule: string
@@ -59,16 +60,11 @@ export function parseCommitMessage(message: string): ParsedMessage {
 		let inFooter = false
 
 		for (let i = 2; i < lines.length; i++) {
-			const line = lines[i]
-			if (!line) continue
+			const line = lines[i] ?? ''
 
-			// Detect footer patterns
-			if (
-				line.match(
-					/^(BREAKING CHANGE|Co-authored-by|Closes|Fixes|Resolves|Ref)\s*[:#]/i,
-				) ||
-				line.match(/^[A-Za-z-]+:\s/)
-			) {
+			// Detect footer patterns (only on non-empty lines)
+			// Only match known git trailer tokens, not arbitrary "word: text" patterns
+			if (line && FOOTER_TOKEN_REGEX.test(line)) {
 				inFooter = true
 			}
 
@@ -210,7 +206,8 @@ export function validateCommitMessage(
 	}
 
 	// 10. Conventional commit format check
-	if (!parsed.type) {
+	// Only enforce when allowedTypes is set or scope/body rules require parsing
+	if (!parsed.type && (fullConfig.allowedTypes || fullConfig.requireScope)) {
 		issues.push({
 			rule: 'conventional-format',
 			message:

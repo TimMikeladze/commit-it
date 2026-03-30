@@ -47,7 +47,7 @@ export class FormatValidator {
 	}
 
 	validateScope(scope: string): boolean {
-		if (!this.preset.scopes) return true
+		if (!this.preset.scopes || this.preset.scopes.length === 0) return true
 		if (!scope) return true
 		return this.preset.scopes.includes(scope)
 	}

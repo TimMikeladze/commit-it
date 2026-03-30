@@ -288,8 +288,21 @@ describe('Validation Service', () => {
 			expect(result.errors.some((e) => e.rule === 'scope-enum')).toBe(true)
 		})
 
-		test('should check conventional format', () => {
-			const config = createTestConfig()
+		test('should check conventional format when allowedTypes configured', () => {
+			const config = createTestConfig({
+				validation: {
+					enabled: true,
+					maxHeaderLength: 72,
+					maxBodyLineLength: 100,
+					requireScope: false,
+					requireBody: false,
+					requireIssue: false,
+					noTrailingPeriod: true,
+					noLeadingCapital: false,
+					allowedTypes: ['feat', 'fix'],
+					customRules: [],
+				},
+			})
 			const result = validateCommitMessage(
 				'not a conventional commit',
 				config.validation,
@@ -298,6 +311,17 @@ describe('Validation Service', () => {
 			expect(result.errors.some((e) => e.rule === 'conventional-format')).toBe(
 				true,
 			)
+		})
+
+		test('should not enforce conventional format without allowedTypes', () => {
+			const config = createTestConfig()
+			const result = validateCommitMessage(
+				'✨ add new feature',
+				config.validation,
+			)
+			expect(
+				result.errors.some((e) => e.rule === 'conventional-format'),
+			).toBe(false)
 		})
 
 		test('should warn on body line length', () => {

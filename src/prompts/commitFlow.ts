@@ -1,5 +1,5 @@
 import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
-import { search } from '@inquirer/search'
+import search from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import { generateCommitMessage, isAIAvailable } from '../services/ai'
@@ -10,7 +10,7 @@ import {
 	parseCoAuthor,
 } from '../services/coauthor'
 import { FormatValidator } from '../services/format'
-import { GitService, type IssueReference } from '../services/git'
+import { type CommitResult, GitService, type IssueReference } from '../services/git'
 import { formatLabelColor, GitHubService, type Issue } from '../services/github'
 import { getAllScopeSuggestions } from '../services/scope'
 import {
@@ -36,15 +36,15 @@ export interface DirectCommitOptions {
 	scope?: string
 	body?: string
 	breaking?: boolean
+	breakingDescription?: string
+	issueRefs?: IssueReference[]
 	dryRun?: boolean
 	stageAll?: boolean
 	amend?: boolean
 	coAuthor?: string
 }
 
-export interface CommitResult {
-	hash: string
-}
+export type { CommitResult }
 
 const ISSUE_ACTIONS = [
 	{ value: 'Closes', label: 'Closes', desc: 'Auto-close issue when merged' },
@@ -60,14 +60,14 @@ const ISSUE_ACTIONS = [
 export async function interactiveCommit(
 	options: InteractiveOptions,
 ): Promise<CommitResult> {
-	const config = (await loadConfig()) as any
-	const presetName = options.preset || config?.preset
+	const config = await loadConfig()
+	const presetName = options.preset || config.preset
 	const preset = getPreset(presetName)
 	const validator = new FormatValidator(preset)
 
 	// Initialize services
 	const github = new GitHubService(
-		!options.skipGithub && config?.github?.enabled !== false,
+		!options.skipGithub && config.github?.enabled !== false,
 	)
 	const git = new GitService()
 
@@ -76,7 +76,7 @@ export async function interactiveCommit(
 
 	// Get changed files for scope suggestions
 	const changedFiles = await git.getChangedFiles()
-	const labelPatterns = config?.github?.scopeLabelPatterns || [
+	const labelPatterns = config.github?.scopeLabelPatterns || [
 		'scope:',
 		'scope/',
 		'area:',
@@ -86,7 +86,7 @@ export async function interactiveCommit(
 	]
 	const scopeSuggestions = getAllScopeSuggestions(
 		changedFiles,
-		config?.scopeMap,
+		config.scopeMap,
 		context.prLabels || [],
 		labelPatterns,
 	)
@@ -162,7 +162,7 @@ export async function interactiveCommit(
 
 	// 2. Select scope with hybrid suggestions
 	let scopes: string[] = []
-	const scopeMode = config?.scopeMode || 'single'
+	const scopeMode = config.scopeMode || 'single'
 	const presetScopes = validator.getAvailableScopes()
 
 	// Build scope options from multiple sources
@@ -183,9 +183,7 @@ export async function interactiveCommit(
 	// Add hybrid scope suggestions
 	for (const suggestion of scopeSuggestions) {
 		let sourceLabel: string
-		if (suggestion.source === 'config') {
-			sourceLabel = 'config'
-		} else if (suggestion.source === 'label') {
+		if (suggestion.source === 'label') {
 			// Show colored label badge if color is available
 			sourceLabel = suggestion.color
 				? formatLabelColor(
@@ -194,7 +192,7 @@ export async function interactiveCommit(
 					)
 				: `label: ${suggestion.label}`
 		} else {
-			sourceLabel = 'path'
+			sourceLabel = 'config'
 		}
 		scopeOptions.push({
 			value: suggestion.value,
@@ -216,7 +214,7 @@ export async function interactiveCommit(
 			const selectedScope = await select({
 				message: 'Select scope (or skip)',
 				options: singleOptions,
-				initialValue: suggestedScope || config?.defaults?.scope || '',
+				initialValue: suggestedScope || config.defaults?.scope || '',
 			})
 
 			if (isCancel(selectedScope)) {
@@ -269,7 +267,7 @@ export async function interactiveCommit(
 	const issueRefs: IssueReference[] = []
 	let addMoreIssues = await confirm({
 		message: 'Reference a GitHub issue?',
-		initialValue: config?.github?.auto?.detectIssues !== false,
+		initialValue: config.github?.auto?.detectIssues !== false,
 	})
 
 	if (isCancel(addMoreIssues)) {
@@ -280,7 +278,7 @@ export async function interactiveCommit(
 		try {
 			const selectedIssue = await search<Issue | null>({
 				message: 'Search issues (type to search)',
-				source: async (input, { signal }) => {
+				source: async (input: string | undefined, { signal }: { signal: AbortSignal }) => {
 					if (!input) {
 						// Show recent open issues by default
 						const issues = await github.searchIssues('state:open sort:updated')
@@ -377,7 +375,7 @@ export async function interactiveCommit(
 	const addBody = await confirm({
 		message: 'Add detailed body?',
 		initialValue:
-			config?.defaults?.includeBody !== false ||
+			config.defaults?.includeBody !== false ||
 			!!aiSuggestion?.body ||
 			!!lastCommit?.body,
 	})
@@ -403,9 +401,10 @@ export async function interactiveCommit(
 
 	// Handle CLI co-author flag
 	if (options.coAuthor) {
-		const configCoAuthors = config?.coauthors || {}
-		if (configCoAuthors[options.coAuthor]) {
-			const parsed = parseCoAuthor(configCoAuthors[options.coAuthor])
+		const configCoAuthors = config.coauthors || {}
+		const coauthorValue = configCoAuthors[options.coAuthor]
+		if (coauthorValue) {
+			const parsed = parseCoAuthor(coauthorValue)
 			if (parsed) {
 				selectedCoAuthors.push({
 					...parsed,
@@ -429,7 +428,7 @@ export async function interactiveCommit(
 
 	if (!isCancel(addCoAuthors) && addCoAuthors) {
 		const availableCoAuthors = await getAllCoAuthors(
-			config?.coauthors,
+			config.coauthors,
 			!options.skipGithub,
 		)
 
@@ -470,7 +469,7 @@ export async function interactiveCommit(
 	}
 
 	// 8. Preview and confirm
-	let fullMessage = `${type}`
+	let fullMessage = type as string
 
 	// Format scopes based on scopeMode
 	let headerScope = ''
@@ -526,7 +525,7 @@ export async function interactiveCommit(
 	console.log()
 
 	// Validate commit message
-	const validationConfig = config?.validation || getDefaultValidationConfig()
+	const validationConfig = config.validation || getDefaultValidationConfig()
 	if (validationConfig.enabled) {
 		const validationResult = validateCommitMessage(
 			fullMessage,
@@ -589,8 +588,8 @@ export async function interactiveCommit(
 export async function directCommit(
 	options: DirectCommitOptions,
 ): Promise<CommitResult> {
-	const config = (await loadConfig()) as any
-	const presetName = config?.preset
+	const config = await loadConfig()
+	const presetName = config.preset
 	const preset = getPreset(presetName)
 	const validator = new FormatValidator(preset)
 	const git = new GitService()
@@ -617,9 +616,10 @@ export async function directCommit(
 	// Resolve co-author
 	const coauthors: string[] = []
 	if (options.coAuthor) {
-		const configCoAuthors = config?.coauthors || {}
-		if (configCoAuthors[options.coAuthor]) {
-			const parsed = parseCoAuthor(configCoAuthors[options.coAuthor])
+		const configCoAuthors = config.coauthors || {}
+		const coauthorValue = configCoAuthors[options.coAuthor]
+		if (coauthorValue) {
+			const parsed = parseCoAuthor(coauthorValue)
 			if (parsed) coauthors.push(formatCoAuthor(parsed))
 		} else {
 			const parsed = parseCoAuthor(options.coAuthor)
@@ -627,11 +627,27 @@ export async function directCommit(
 		}
 	}
 
-	// Validate the full message
-	const validationConfig = config?.validation || getDefaultValidationConfig()
+	// Validate the full message (must match what createCommit will produce)
+	const validationConfig = config.validation || getDefaultValidationConfig()
 	if (validationConfig.enabled) {
-		const header = `${options.type}${options.scope ? `(${options.scope})` : ''}${options.breaking ? '!' : ''}: ${options.message}`
-		const validationResult = validateCommitMessage(header, validationConfig)
+		let fullMessage = `${options.type}${options.scope ? `(${options.scope})` : ''}${options.breaking ? '!' : ''}: ${options.message}`
+		if (options.body) {
+			fullMessage += `\n\n${options.body}`
+		}
+		const breakingDesc = options.breaking ? (options.breakingDescription || 'breaking change') : undefined
+		if (breakingDesc) {
+			fullMessage += `\n\nBREAKING CHANGE: ${breakingDesc}`
+		}
+		if (options.issueRefs && options.issueRefs.length > 0) {
+			const issueFooter = options.issueRefs
+				.map((ref) => `${ref.action} #${ref.number}`)
+				.join('\n')
+			fullMessage += `\n\n${issueFooter}`
+		}
+		if (coauthors.length > 0) {
+			fullMessage += `\n\n${coauthors.join('\n')}`
+		}
+		const validationResult = validateCommitMessage(fullMessage, validationConfig)
 		if (!validationResult.valid) {
 			throw new Error(
 				`Validation failed:\n${formatValidationResult(validationResult)}`,
@@ -648,7 +664,8 @@ export async function directCommit(
 		scope: options.scope,
 		message: options.message,
 		body: options.body,
-		breaking: options.breaking ? 'breaking change' : undefined,
+		breaking: options.breaking ? (options.breakingDescription || 'breaking change') : undefined,
+		issueRefs: options.issueRefs,
 		coauthors,
 		dryRun: options.dryRun,
 		amend: options.amend,

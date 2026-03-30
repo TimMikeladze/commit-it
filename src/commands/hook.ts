@@ -3,6 +3,7 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	unlinkSync,
 	writeFileSync,
 } from 'node:fs'
 import { join } from 'node:path'
@@ -15,10 +16,10 @@ const COMMIT_MSG_HOOK = `#!/bin/sh
 commit_msg_file="$1"
 
 # Run commit-it validation
-if command -v commit-it &> /dev/null; then
+if command -v commit-it > /dev/null 2>&1; then
     commit-it validate --file "$commit_msg_file"
     exit $?
-elif command -v npx &> /dev/null; then
+elif command -v npx > /dev/null 2>&1; then
     npx commit-it validate --file "$commit_msg_file"
     exit $?
 else
@@ -86,8 +87,9 @@ export const installHookCommand = command({
 			console.log(
 				'Configure rules in commit.config.ts or .commitrc under "validation"',
 			)
-		} catch (error: any) {
-			console.error('✗ Error:', error.message)
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			console.error('✗ Error:', message)
 			process.exit(1)
 		}
 	},
@@ -113,12 +115,12 @@ export const uninstallHookCommand = command({
 				process.exit(0)
 			}
 
-			const { unlinkSync } = await import('node:fs')
 			unlinkSync(hookPath)
 
 			console.log('✓ Removed commit-msg hook')
-		} catch (error: any) {
-			console.error('✗ Error:', error.message)
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			console.error('✗ Error:', message)
 			process.exit(1)
 		}
 	},

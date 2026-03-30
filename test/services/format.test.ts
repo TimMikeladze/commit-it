@@ -127,13 +127,13 @@ describe('Format Service', () => {
 		})
 
 		describe('validateScope', () => {
-			test('should validate conventional scope', () => {
+			test('should allow any scope when preset has no scopes defined', () => {
 				const preset = getPreset('conventional')
 				const validator = new FormatValidator(preset)
+				// With no scopes defined, any scope is valid
 				expect(validator.validateScope('cli')).toBe(true)
 				expect(validator.validateScope('api')).toBe(true)
-				expect(validator.validateScope('core')).toBe(true)
-				expect(validator.validateScope('invalid')).toBe(false)
+				expect(validator.validateScope('anything')).toBe(true)
 			})
 
 			test('should allow empty scope', () => {
@@ -256,13 +256,11 @@ describe('Format Service', () => {
 		})
 
 		describe('getAvailableScopes', () => {
-			test('should return conventional scopes', () => {
+			test('should return empty for conventional preset (no fixed scopes)', () => {
 				const preset = getPreset('conventional')
 				const validator = new FormatValidator(preset)
 				const scopes = validator.getAvailableScopes()
-				expect(scopes).toContain('cli')
-				expect(scopes).toContain('api')
-				expect(scopes).toContain('core')
+				expect(scopes).toEqual([])
 			})
 
 			test('should return empty array for gitmoji (no scopes)', () => {

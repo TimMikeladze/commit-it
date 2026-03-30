@@ -157,7 +157,15 @@ export async function loadConfig(): Promise<Config> {
  *   scopeMap: { 'src/cli/**': 'cli' }
  * })
  */
-export function defineConfig<T extends Record<string, unknown>>(config: T): T {
+type DeepPartial<T> = {
+	[P in keyof T]?: T[P] extends (infer U)[]
+		? U[]
+		: NonNullable<T[P]> extends Record<string, unknown>
+			? DeepPartial<NonNullable<T[P]>>
+			: T[P]
+}
+
+export function defineConfig(config: DeepPartial<Config>): DeepPartial<Config> {
 	return config
 }
 

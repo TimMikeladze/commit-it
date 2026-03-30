@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
 	buildFullMessage,
 	DEFAULT_TEMPLATES,
+	directCommit,
 	FormatValidator,
 	formatCoAuthor,
 	getCoAuthorsFromConfig,
@@ -140,14 +141,13 @@ describe('README Examples - Programmatic API', () => {
 		})
 	})
 
-	describe('getScopesFromPaths (auto-detect)', () => {
-		test('should auto-detect scopes from paths', () => {
+	describe('getScopesFromPaths (deprecated)', () => {
+		test('should return empty (deprecated, use scopeMap config instead)', () => {
 			const scopes = getScopesFromPaths([
 				'src/cli/index.ts',
 				'src/api/users.ts',
 			])
-			expect(scopes.map((s) => s.value)).toContain('cli')
-			expect(scopes.map((s) => s.value)).toContain('api')
+			expect(scopes).toHaveLength(0)
 		})
 	})
 
@@ -265,6 +265,80 @@ describe('README Examples - Programmatic API', () => {
 			expect(DEFAULT_TEMPLATES.conventional).toBeDefined()
 			expect(DEFAULT_TEMPLATES.angular).toBeDefined()
 			expect(DEFAULT_TEMPLATES.gitmoji).toBeDefined()
+		})
+	})
+
+	describe('directCommit', () => {
+		test('should include breakingDescription in the commit message', async () => {
+			const result = await directCommit({
+				type: 'feat',
+				message: 'change api',
+				breaking: true,
+				breakingDescription: 'removed endpoint',
+				dryRun: true,
+			})
+
+			expect(result.hash).toBe('dry-run')
+			expect(result.message).toContain('feat!: change api')
+			expect(result.message).toContain('BREAKING CHANGE: removed endpoint')
+		})
+
+		test('should fall back to default breaking description when breakingDescription is not provided', async () => {
+			const result = await directCommit({
+				type: 'feat',
+				message: 'change api',
+				breaking: true,
+				dryRun: true,
+			})
+
+			expect(result.hash).toBe('dry-run')
+			expect(result.message).toContain('feat!: change api')
+			expect(result.message).toContain('BREAKING CHANGE: breaking change')
+		})
+
+		test('should include issueRefs in the commit message', async () => {
+			const result = await directCommit({
+				type: 'fix',
+				message: 'bug',
+				issueRefs: [{ action: 'Closes', number: 42 }],
+				dryRun: true,
+			})
+
+			expect(result.hash).toBe('dry-run')
+			expect(result.message).toContain('fix: bug')
+			expect(result.message).toContain('Closes #42')
+		})
+
+		test('should include multiple issueRefs in the commit message', async () => {
+			const result = await directCommit({
+				type: 'fix',
+				message: 'resolve multiple issues',
+				issueRefs: [
+					{ action: 'Closes', number: 42 },
+					{ action: 'Fixes', number: 99 },
+				],
+				dryRun: true,
+			})
+
+			expect(result.hash).toBe('dry-run')
+			expect(result.message).toContain('Closes #42')
+			expect(result.message).toContain('Fixes #99')
+		})
+
+		test('should include both breakingDescription and issueRefs together', async () => {
+			const result = await directCommit({
+				type: 'feat',
+				message: 'overhaul api',
+				breaking: true,
+				breakingDescription: 'endpoints renamed',
+				issueRefs: [{ action: 'Closes', number: 15 }],
+				dryRun: true,
+			})
+
+			expect(result.hash).toBe('dry-run')
+			expect(result.message).toContain('feat!: overhaul api')
+			expect(result.message).toContain('BREAKING CHANGE: endpoints renamed')
+			expect(result.message).toContain('Closes #15')
 		})
 	})
 })

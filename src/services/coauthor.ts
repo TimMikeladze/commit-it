@@ -52,7 +52,7 @@ export function getCoAuthorsFromConfig(
 			}
 			return null
 		})
-		.filter((c) => c !== null) as CoAuthor[]
+		.filter((c) => c !== null)
 }
 
 /**
@@ -65,7 +65,7 @@ export async function getGitHubCollaborators(): Promise<CoAuthor[]> {
 			'api',
 			'repos/{owner}/{repo}/collaborators',
 			'--jq',
-			'.[] | "(.login)"',
+			'.[].login',
 		])
 
 		if (result.status !== 0 || !result.stdout.trim()) {
@@ -82,7 +82,7 @@ export async function getGitHubCollaborators(): Promise<CoAuthor[]> {
 				'api',
 				`users/${login}`,
 				'--jq',
-				'"(.name // .login) <(.email // .login + "@users.noreply.github.com")>"',
+				'"\\(.name // .login) <\\(.email // .login + "@users.noreply.github.com")>"',
 			])
 
 			if (userResult.status === 0 && userResult.stdout.trim()) {

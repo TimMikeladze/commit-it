@@ -46,7 +46,7 @@ export const presets: Record<string, Preset> = {
 
 	gitmoji: {
 		name: 'Gitmoji',
-		template: '{emoji} {message}',
+		template: '{type} {message}',
 		types: [
 			{ value: '✨', desc: 'New feature' },
 			{ value: '🐛', desc: 'Bug fix' },

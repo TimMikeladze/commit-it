@@ -3,7 +3,7 @@ import type { Label } from './github'
 
 export interface ScopeSuggestion {
 	value: string
-	source: 'config' | 'label' | 'path'
+	source: 'config' | 'label'
 	label?: string
 	color?: string // hex color for label-sourced scopes
 }
@@ -85,7 +85,6 @@ export function getAllScopeSuggestions(
 ): ScopeSuggestion[] {
 	const configScopes = getScopesFromConfig(changedFiles, scopeMap)
 	const labelScopes = getScopesFromLabels(labels, labelPatterns)
-	const pathScopes = getScopesFromPaths(changedFiles)
 
 	// Deduplicate by value, keeping highest priority source
 	const seen = new Map<string, ScopeSuggestion>()
@@ -97,13 +96,6 @@ export function getAllScopeSuggestions(
 
 	// Label scopes next
 	for (const scope of labelScopes) {
-		if (!seen.has(scope.value)) {
-			seen.set(scope.value, scope)
-		}
-	}
-
-	// Path scopes last
-	for (const scope of pathScopes) {
 		if (!seen.has(scope.value)) {
 			seen.set(scope.value, scope)
 		}

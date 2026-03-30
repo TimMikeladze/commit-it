@@ -39,9 +39,9 @@ export const validateCommand = command({
 				process.exit(1)
 			}
 
-			const config = (await loadConfig()) as any
+			const config = await loadConfig()
 			const validationConfig =
-				config?.validation || getDefaultValidationConfig()
+				config.validation || getDefaultValidationConfig()
 
 			if (!validationConfig.enabled) {
 				console.log('ℹ Validation is disabled in config')
@@ -61,8 +61,9 @@ export const validateCommand = command({
 			if (!result.valid) {
 				process.exit(1)
 			}
-		} catch (error: any) {
-			console.error('✗ Error:', error.message)
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error)
+			console.error('✗ Error:', message)
 			process.exit(1)
 		}
 	},
