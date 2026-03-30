@@ -319,9 +319,9 @@ describe('Validation Service', () => {
 				'✨ add new feature',
 				config.validation,
 			)
-			expect(
-				result.errors.some((e) => e.rule === 'conventional-format'),
-			).toBe(false)
+			expect(result.errors.some((e) => e.rule === 'conventional-format')).toBe(
+				false,
+			)
 		})
 
 		test('should warn on body line length', () => {

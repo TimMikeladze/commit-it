@@ -18,7 +18,11 @@ export async function execFileNoThrow(
 		return { stdout, stderr, status: 0 }
 	} catch (error: unknown) {
 		if (error instanceof Error) {
-			const execError = error as Error & { stdout?: string; stderr?: string; status?: number }
+			const execError = error as Error & {
+				stdout?: string
+				stderr?: string
+				status?: number
+			}
 			return {
 				stdout: execError.stdout || '',
 				stderr: execError.stderr || execError.message || '',

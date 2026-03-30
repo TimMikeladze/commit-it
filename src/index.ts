@@ -1,7 +1,10 @@
 export type { Config, CustomRule, ValidationConfig } from './config'
 export { defineConfig, getDefaultConfig, loadConfig } from './config'
 export { getPreset, listPresets, presets } from './presets'
-export type { DirectCommitOptions, InteractiveOptions } from './prompts/commitFlow'
+export type {
+	DirectCommitOptions,
+	InteractiveOptions,
+} from './prompts/commitFlow'
 export { directCommit, interactiveCommit } from './prompts/commitFlow'
 // AI service
 export type { AICommitSuggestion } from './services/ai'

@@ -10,7 +10,11 @@ import {
 	parseCoAuthor,
 } from '../services/coauthor'
 import { FormatValidator } from '../services/format'
-import { type CommitResult, GitService, type IssueReference } from '../services/git'
+import {
+	type CommitResult,
+	GitService,
+	type IssueReference,
+} from '../services/git'
 import { formatLabelColor, GitHubService, type Issue } from '../services/github'
 import { getAllScopeSuggestions } from '../services/scope'
 import {
@@ -278,7 +282,10 @@ export async function interactiveCommit(
 		try {
 			const selectedIssue = await search<Issue | null>({
 				message: 'Search issues (type to search)',
-				source: async (input: string | undefined, { signal }: { signal: AbortSignal }) => {
+				source: async (
+					input: string | undefined,
+					{ signal }: { signal: AbortSignal },
+				) => {
 					if (!input) {
 						// Show recent open issues by default
 						const issues = await github.searchIssues('state:open sort:updated')
@@ -634,7 +641,9 @@ export async function directCommit(
 		if (options.body) {
 			fullMessage += `\n\n${options.body}`
 		}
-		const breakingDesc = options.breaking ? (options.breakingDescription || 'breaking change') : undefined
+		const breakingDesc = options.breaking
+			? options.breakingDescription || 'breaking change'
+			: undefined
 		if (breakingDesc) {
 			fullMessage += `\n\nBREAKING CHANGE: ${breakingDesc}`
 		}
@@ -647,7 +656,10 @@ export async function directCommit(
 		if (coauthors.length > 0) {
 			fullMessage += `\n\n${coauthors.join('\n')}`
 		}
-		const validationResult = validateCommitMessage(fullMessage, validationConfig)
+		const validationResult = validateCommitMessage(
+			fullMessage,
+			validationConfig,
+		)
 		if (!validationResult.valid) {
 			throw new Error(
 				`Validation failed:\n${formatValidationResult(validationResult)}`,
@@ -664,7 +676,9 @@ export async function directCommit(
 		scope: options.scope,
 		message: options.message,
 		body: options.body,
-		breaking: options.breaking ? (options.breakingDescription || 'breaking change') : undefined,
+		breaking: options.breaking
+			? options.breakingDescription || 'breaking change'
+			: undefined,
 		issueRefs: options.issueRefs,
 		coauthors,
 		dryRun: options.dryRun,

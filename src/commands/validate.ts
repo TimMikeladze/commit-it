@@ -40,8 +40,7 @@ export const validateCommand = command({
 			}
 
 			const config = await loadConfig()
-			const validationConfig =
-				config.validation || getDefaultValidationConfig()
+			const validationConfig = config.validation || getDefaultValidationConfig()
 
 			if (!validationConfig.enabled) {
 				console.log('ℹ Validation is disabled in config')
