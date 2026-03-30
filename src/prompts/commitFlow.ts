@@ -1,5 +1,5 @@
 import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
-import search from '@inquirer/search'
+import { default as search } from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import { generateCommitMessage, isAIAvailable } from '../services/ai'
@@ -108,12 +108,12 @@ export async function interactiveCommit(
 
 	// AI generation (if requested)
 	let aiSuggestion = null
-	if (options.useAI && isAIAvailable(config)) {
+	if (options.useAI && (await isAIAvailable())) {
 		console.log('🤖 Generating commit message with AI...\n')
 		const diff = await git.getStagedDiff()
 		if (diff) {
 			const types = validator.getAvailableTypes().map((t) => t.value)
-			aiSuggestion = await generateCommitMessage(diff, config, {
+			aiSuggestion = await generateCommitMessage(diff, {
 				branchName: await git.getBranchName(),
 				existingTypes: types,
 			})
