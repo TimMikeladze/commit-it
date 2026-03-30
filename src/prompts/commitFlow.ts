@@ -2,7 +2,11 @@ import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
 import { default as search } from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
-import { generateCommitMessage, isAIAvailable, NO_CLI_ERROR_MESSAGE } from '../services/ai'
+import {
+	generateCommitMessage,
+	isAIAvailable,
+	NO_CLI_ERROR_MESSAGE,
+} from '../services/ai'
 import {
 	type CoAuthor,
 	formatCoAuthor,

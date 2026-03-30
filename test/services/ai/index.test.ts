@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import {
 	buildPrompt,
-	parseAIResponse,
 	createAdapter,
 	NO_CLI_ERROR_MESSAGE,
+	parseAIResponse,
 } from '../../../src/services/ai'
 
 describe('buildPrompt', () => {
@@ -18,7 +18,9 @@ describe('buildPrompt', () => {
 	})
 
 	test('should include existing types when provided', () => {
-		const prompt = buildPrompt('diff', { existingTypes: ['feat', 'fix', 'docs'] })
+		const prompt = buildPrompt('diff', {
+			existingTypes: ['feat', 'fix', 'docs'],
+		})
 		expect(prompt).toContain('feat')
 		expect(prompt).toContain('fix')
 		expect(prompt).toContain('docs')
@@ -33,17 +35,21 @@ describe('buildPrompt', () => {
 
 describe('parseAIResponse', () => {
 	test('should parse valid JSON response', () => {
-		const result = parseAIResponse('{"type":"feat","scope":"cli","message":"add feature"}')
+		const result = parseAIResponse(
+			'{"type":"feat","scope":"cli","message":"add feature"}',
+		)
 		expect(result).not.toBeNull()
-		expect(result!.type).toBe('feat')
-		expect(result!.scope).toBe('cli')
-		expect(result!.message).toBe('add feature')
+		expect(result?.type).toBe('feat')
+		expect(result?.scope).toBe('cli')
+		expect(result?.message).toBe('add feature')
 	})
 
 	test('should extract JSON from surrounding text', () => {
-		const result = parseAIResponse('Here is the result:\n{"type":"fix","message":"bug fix"}\nDone.')
+		const result = parseAIResponse(
+			'Here is the result:\n{"type":"fix","message":"bug fix"}\nDone.',
+		)
 		expect(result).not.toBeNull()
-		expect(result!.type).toBe('fix')
+		expect(result?.type).toBe('fix')
 	})
 
 	test('should return null for invalid response', () => {
@@ -54,13 +60,13 @@ describe('parseAIResponse', () => {
 	test('should default type to feat if missing', () => {
 		const result = parseAIResponse('{"message":"something"}')
 		expect(result).not.toBeNull()
-		expect(result!.type).toBe('feat')
+		expect(result?.type).toBe('feat')
 	})
 
 	test('should default message to update if missing', () => {
 		const result = parseAIResponse('{"type":"fix"}')
 		expect(result).not.toBeNull()
-		expect(result!.message).toBe('update')
+		expect(result?.message).toBe('update')
 	})
 })
 
@@ -81,7 +87,10 @@ describe('createAdapter', () => {
 	})
 
 	test('should create custom adapter with command', () => {
-		const adapter = createAdapter({ name: 'custom', command: 'my-tool {{prompt}}' })
+		const adapter = createAdapter({
+			name: 'custom',
+			command: 'my-tool {{prompt}}',
+		})
 		expect(adapter.name).toBe('custom')
 	})
 

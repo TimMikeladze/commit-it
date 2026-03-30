@@ -89,12 +89,13 @@ commit-it install-hook
 commit-it
 ```
 
-The CLI is also available as `cit`:
+The CLI is also available as `cit` or `commit`:
 
 ```bash
 cit              # interactive commit
 cit --ai         # AI-generated commit message
-cit -t fix -m "resolve bug"  # non-interactive
+commit           # interactive commit
+commit -t fix -m "resolve bug"  # non-interactive
 ```
 
 Running `commit-it` with no arguments (or with only flags) defaults to the `commit` command. If the first argument isn't a recognized command, it's also treated as `commit`.

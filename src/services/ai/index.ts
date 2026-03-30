@@ -5,12 +5,12 @@ import { createCodexAdapter } from './adapters/codex'
 import { createCustomAdapter } from './adapters/custom'
 import { loadUserAIConfig } from './config'
 import { detectAvailableCLI } from './detect'
-import {
-	type AICommitSuggestion,
-	type CLIAdapter,
-	type GenerateContext,
-	type ProviderConfig,
-	type ProviderName,
+import type {
+	AICommitSuggestion,
+	CLIAdapter,
+	GenerateContext,
+	ProviderConfig,
+	ProviderName,
 } from './types'
 
 export type { AICommitSuggestion, CLIAdapter, GenerateContext }
@@ -65,7 +65,9 @@ export async function resolveProvider(
 		if (await adapter.isAvailable()) {
 			return adapter
 		}
-		throw new Error(`Provider "${providerOverride}" is not available. Is it installed?`)
+		throw new Error(
+			`Provider "${providerOverride}" is not available. Is it installed?`,
+		)
 	}
 
 	// 2 & 3. User config: provider field, then first in providers array
@@ -165,7 +167,9 @@ export async function generateCommitMessage(
 	}
 }
 
-export async function isAIAvailable(providerOverride?: string): Promise<boolean> {
+export async function isAIAvailable(
+	providerOverride?: string,
+): Promise<boolean> {
 	try {
 		await resolveProvider(providerOverride)
 		return true

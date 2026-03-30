@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { ExecResult } from '../../../../src/utils/execFileNoThrow'
 import { createCodexAdapter } from '../../../../src/services/ai/adapters/codex'
+import type { ExecResult } from '../../../../src/utils/execFileNoThrow'
 
-function mockExec(result: ExecResult): (cmd: string, args?: string[]) => Promise<ExecResult> {
+function mockExec(
+	result: ExecResult,
+): (cmd: string, args?: string[]) => Promise<ExecResult> {
 	return async () => result
 }
 
@@ -15,7 +17,11 @@ function captureExec(): {
 		calls,
 		exec: async (cmd: string, args?: string[]) => {
 			calls.push({ cmd, args })
-			return { stdout: '{"type":"feat","message":"test"}', stderr: '', status: 0 }
+			return {
+				stdout: '{"type":"feat","message":"test"}',
+				stderr: '',
+				status: 0,
+			}
 		},
 	}
 }

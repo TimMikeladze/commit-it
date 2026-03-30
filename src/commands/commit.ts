@@ -21,7 +21,9 @@ export const commitCommand = command({
 			.desc('Generate message from diff using AI')
 			.default(false),
 		noAi: boolean('no-ai').desc('Disable AI even if configured').default(false),
-		provider: string('provider').desc('AI provider to use (claude, codex, agent, custom)'),
+		provider: string('provider').desc(
+			'AI provider to use (claude, codex, agent, custom)',
+		),
 		type: string('type').alias('t').desc('Commit type (e.g. feat, fix)'),
 		message: string('message')
 			.alias('m')
@@ -54,7 +56,7 @@ export const commitCommand = command({
 			}
 
 			const autoAI = await shouldAutoAI()
-			const useAI = opts.noAi ? false : (opts.ai || autoAI)
+			const useAI = opts.noAi ? false : opts.ai || autoAI
 			const commit = await interactiveCommit({
 				skipGithub: opts.noGithub,
 				dryRun: opts.dryRun,
