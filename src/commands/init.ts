@@ -130,7 +130,7 @@ export const initCommand = command({
 
 		const preset = await text({
 			message: 'Default preset',
-			placeholder: 'conventional, angular, or gitmoji',
+			placeholder: 'conventional or gitmoji',
 			defaultValue: 'conventional',
 		})
 

@@ -1,6 +1,6 @@
 # commit-it
 
-Interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation (via Claude Code, Codex, or any CLI), co-author support, headless mode for agents, and configurable validation. Works as both a CLI tool and a programmatic library.
+Interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation (via Claude Code, Codex, or any CLI), multi-commit splitting, co-author support, headless mode for agents, and configurable validation. Works as both a CLI tool and a programmatic library.
 
 ## Table of Contents
 
@@ -14,6 +14,7 @@ Interactive CLI for creating standardized git commits with GitHub integration, A
   - [`install-hook` / `uninstall-hook`](#install-hook--uninstall-hook)
   - [`presets`](#presets)
   - [`config`](#config)
+  - [`setup`](#setup)
   - [`setup-alias`](#setup-alias)
 - [Interactive Commit Flow](#interactive-commit-flow)
 - [Non-Interactive Mode](#non-interactive-mode)
@@ -130,6 +131,8 @@ commit-it commit
 | `--ai` | | Generate commit message from staged diff using AI |
 | `--no-ai` | | Disable AI even if enabled in config |
 | `--provider <name>` | | AI provider to use (`claude`, `codex`, `agent`, `custom`) |
+| `--multi` | | Split staged changes into multiple logical commits using AI |
+| `--verbose` | | Show detailed output of AI commands being run |
 | `--yes` | `-y` | Skip all prompts, accept defaults (headless mode for agents) |
 | `--co-author <value>` | `-c` | Add co-author by config alias or `"Name <email>"` |
 | `--no-github` | | Skip all GitHub API calls |
@@ -171,6 +174,12 @@ commit-it --no-github
 
 # Headless mode for agents (AI generate + auto-accept + commit)
 commit-it --ai -y
+
+# Split staged changes into multiple logical commits
+commit-it --all --multi
+
+# See exactly what AI commands are being run
+commit-it --ai --verbose
 
 # Pass git commit flags after --
 commit-it -- --no-verify
@@ -264,7 +273,7 @@ commit-it init
 **Interactive flow:**
 
 1. Choose config format: TypeScript (recommended), JavaScript, JSON, or YAML
-2. Choose default preset: `conventional`, `angular`, or `gitmoji`
+2. Choose default preset: `conventional` or `gitmoji`
 3. Optionally set up a shell alias
 
 **Generated TypeScript config:**
@@ -334,7 +343,6 @@ commit-it presets
 Available presets:
 
   conventional: Conventional Commits
-  angular: Angular Style
   gitmoji: Gitmoji
 ```
 
@@ -347,6 +355,24 @@ commit-it config
 ```
 
 Useful for debugging config loading issues or verifying what rules are active.
+
+### `setup`
+
+Run (or re-run) the setup wizard to configure your AI provider, model, commit style, and editor.
+
+```bash
+commit-it setup
+```
+
+**Interactive flow:**
+
+1. Choose AI provider (Claude Code, Codex, Cursor Agent, or Custom)
+2. Choose model (e.g. Haiku 4.5 for fastest, Sonnet 4.6 for balanced, Opus 4.6 for most capable)
+3. Choose whether to always use AI (use `--no-ai` to skip per commit)
+4. Choose commit style (Conventional Commits or Gitmoji, with example previews)
+5. Choose editor for commit editing (VS Code, Cursor, Vim, Neovim, Nano, Emacs, or custom command)
+
+Saves to `~/.commit-it/config.json`. Run `commit-it setup` anytime to reconfigure.
 
 ### `setup-alias`
 
@@ -393,7 +419,7 @@ Running `commit-it` (or `cit`) walks through these steps:
 
 When **amending** (`--amend`), all fields are pre-filled from the previous commit's parsed components (type, scope, message, body, breaking change).
 
-When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (type, scope, message, body) is shown. You can accept, edit in `$EDITOR`, or decline, then proceed through the flow with accepted values pre-filled. In headless mode (`--ai -y`), the suggestion is auto-accepted and committed immediately.
+When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (type, scope, message, body) is generated. You can accept, edit in `$EDITOR`, or decline. If accepted, the commit skips all manual prompts and goes straight to preview/confirm (with an option to edit again). If declined, you proceed through the manual flow. In headless mode (`--ai -y`), the suggestion is auto-accepted and committed immediately.
 
 **Validation at preview:** If validation fails, you see the errors and can choose to continue anyway or cancel.
 
@@ -459,7 +485,7 @@ import { defineConfig } from 'commit-it'
 
 export default defineConfig({
   // ─── Preset ───────────────────────────────────────────────
-  // Commit format preset: 'conventional' | 'angular' | 'gitmoji'
+  // Commit format preset: 'conventional' | 'gitmoji'
   // Default: 'conventional'
   preset: 'conventional',
 
@@ -652,7 +678,7 @@ validation:
 
 ## Presets
 
-Three built-in presets define the commit format, available types, and validation regex:
+Two built-in presets define the commit format, available types, and validation regex:
 
 ### Conventional Commits (default)
 
@@ -670,14 +696,6 @@ type(scope): message
 | `perf` | Code change that improves performance |
 | `test` | Adding missing tests |
 | `chore` | Changes to build process or dependencies |
-
-### Angular
-
-```
-type(scope): message
-```
-
-Same types as Conventional except without `chore`.
 
 ### Gitmoji
 
@@ -730,18 +748,22 @@ To configure a preferred provider or custom CLI, create `~/.commit-it/config.jso
     "auto": true,
     "provider": "claude",
     "providers": [
-      { "name": "claude", "model": "sonnet" },
+      { "name": "claude", "model": "claude-haiku-4-5-20251001" },
       { "name": "custom", "command": "my-tool --prompt {{prompt}}" }
     ]
-  }
+  },
+  "preset": "conventional",
+  "editor": "code --wait"
 }
 ```
 
 | Field | Description |
 |-------|-------------|
-| `auto` | When `true`, always generate AI suggestions without needing `--ai` flag |
-| `provider` | Preferred provider name (`claude`, `codex`, `agent`, `custom`) |
-| `providers` | Ordered list of providers to try. Each can specify `model` or `command` |
+| `ai.auto` | When `true`, always generate AI suggestions without needing `--ai` flag |
+| `ai.provider` | Preferred provider name (`claude`, `codex`, `agent`, `custom`) |
+| `ai.providers` | Ordered list of providers to try. Each can specify `model` or `command` |
+| `preset` | Default commit style (`conventional` or `gitmoji`). Overridden by project config |
+| `editor` | Editor command for commit editing. Falls back to `$VISUAL` > `$EDITOR` > `vi` |
 
 ### Usage
 
@@ -759,36 +781,26 @@ commit-it --no-ai
 
 **What happens:**
 
-1. The staged diff (up to 8000 chars) is sent to the AI CLI
+1. The staged diff (up to 8000 chars) is sent to the AI CLI with your preset's types, template, and descriptions
 2. The AI returns a JSON suggestion with `type`, `scope`, `message`, `body`, and optional `breaking`
 3. You choose: **Accept**, **Edit in $EDITOR**, or **Decline**
-4. If accepted, the values pre-fill the interactive flow
-5. If edited, the message opens in your `$VISUAL`/`$EDITOR`/`vi` -- changes are parsed back into type, scope, message, and body
-6. If declined, you proceed manually
+4. If accepted, the commit goes straight to preview/confirm (no manual type/scope/message prompts)
+5. At the preview, you can **Confirm**, **Edit in $EDITOR**, or **Cancel**
+6. If declined at step 3, you proceed through the manual flow
 
-```
-🤖 Generating commit message with AI...
-
-✨ AI suggestion:
-   fix(auth): resolve token refresh race condition
-   Tokens were being refreshed concurrently leading to 401 errors...
-
-Use this AI-generated message?
-● Accept
-○ Edit in $EDITOR (vim)
-○ Decline (proceed manually)
-```
-
-The AI also receives the current branch name and available types from your preset for better suggestions.
+The AI respects your chosen preset, so gitmoji users get emoji types and conventional users get `feat`/`fix`/etc.
 
 ### First-Run Setup
 
 On your first run, commit-it walks you through a setup wizard:
 
 1. Choose your preferred AI provider (auto-detects installed CLIs)
-2. Choose whether to always generate AI suggestions or use `--ai` per commit
+2. Choose a model (defaults to fastest: Haiku 4.5 for Claude, o4-mini for Codex)
+3. Choose whether to always use AI (use `--no-ai` to skip per commit)
+4. Choose commit style (Conventional Commits or Gitmoji)
+5. Choose your editor for commit editing
 
-The wizard writes `~/.commit-it/config.json` and is skipped in headless mode (`-y`).
+The wizard writes `~/.commit-it/config.json` and is skipped in headless mode (`-y`). Run `commit-it setup` anytime to reconfigure.
 
 ### Headless Mode (for agents)
 
@@ -826,6 +838,52 @@ commit-it --ai -- --no-verify
 commit-it -- --signoff --gpg-sign
 commit-it -- --trailer "Acked-by: Bob"
 ```
+
+### Multi-Commit Mode
+
+Use `--multi` to let AI analyze your staged changes and split them into multiple logical commits:
+
+```bash
+# Stage everything and split into multiple commits
+commit-it --all --multi
+
+# Dry run to preview the plan
+commit-it --all --multi --dry-run
+```
+
+The AI groups related changes together (e.g. a feature and its tests in one commit, config changes in another). You can review the plan, edit it in `$EDITOR`, or cancel.
+
+```
+◇ Analyzing changes for multi-commit split...
+
+╭─────────────────────────────────────────╮
+│ 3 commits                               │
+│                                         │
+│ 1. feat(cli): add setup wizard          │
+│    Files: src/commands/setup.ts, ...    │
+│                                         │
+│ 2. feat(ai): add model selection        │
+│    Files: src/services/ai/index.ts, ... │
+│                                         │
+│ 3. docs: update README                  │
+│    Files: README.md                     │
+╰─────────────────────────────────────────╯
+
+◆ Create these commits?
+  ● Confirm
+  ○ Edit in $EDITOR
+  ○ Cancel
+```
+
+### Verbose Mode
+
+Use `--verbose` to see exactly what commands are being run under the hood:
+
+```bash
+commit-it --ai --verbose
+```
+
+Shows provider resolution, CLI commands, prompt sizes, raw AI responses, and exit codes. Useful for debugging AI generation issues.
 
 ---
 
@@ -1105,7 +1163,6 @@ Default templates per preset:
 | Preset | Template |
 |--------|----------|
 | `conventional` | `{{type}}{{#scope}}({{scope}}){{/scope}}{{#breaking}}!{{/breaking}}: {{message}}` |
-| `angular` | `{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}` |
 | `gitmoji` | `{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}` |
 
 Override with the `template` config option:
@@ -1639,9 +1696,6 @@ buildFullMessage(
 DEFAULT_TEMPLATES.conventional
 // "{{type}}{{#scope}}({{scope}}){{/scope}}{{#breaking}}!{{/breaking}}: {{message}}"
 
-DEFAULT_TEMPLATES.angular
-// "{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}"
-
 DEFAULT_TEMPLATES.gitmoji
 // "{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}"
 ```
@@ -1710,7 +1764,7 @@ import { getPreset, listPresets, presets } from 'commit-it'
 
 // List all preset names
 listPresets()
-// ['conventional', 'angular', 'gitmoji']
+// ['conventional', 'gitmoji']
 
 // Get a preset by name
 const preset = getPreset('conventional')
@@ -1727,7 +1781,6 @@ getPreset('unknown')
 // Access presets directly
 presets.conventional.types[0]  // { value: 'feat', desc: '✨ A new feature' }
 presets.gitmoji.types[0]       // { value: '✨', desc: 'New feature' }
-presets.angular.name           // "Angular Style"
 ```
 
 ### Full Type Reference
@@ -2035,7 +2088,7 @@ src/
 ├── config/
 │   └── index.ts                 Config schema (Zod), loading (c12), defaults
 ├── presets/
-│   └── index.ts                 Conventional, Angular, Gitmoji preset definitions
+│   └── index.ts                 Conventional, Gitmoji preset definitions
 ├── prompts/
 │   └── commitFlow.ts            Full interactive commit flow orchestration
 ├── services/

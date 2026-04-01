@@ -1,4 +1,12 @@
-import { confirm, isCancel, multiselect, select, text } from '@clack/prompts'
+import {
+	confirm,
+	isCancel,
+	log,
+	multiselect,
+	note,
+	select,
+	text,
+} from '@clack/prompts'
 import { default as search } from '@inquirer/search'
 import { loadConfig } from '../config'
 import { getPreset } from '../presets'
@@ -8,6 +16,7 @@ import {
 	isAIAvailable,
 	NO_CLI_ERROR_MESSAGE,
 } from '../services/ai'
+import { loadUserAIConfig } from '../services/ai/config'
 import {
 	type CoAuthor,
 	formatCoAuthor,
@@ -76,7 +85,8 @@ export async function interactiveCommit(
 	options: InteractiveOptions,
 ): Promise<CommitResult> {
 	const config = await loadConfig()
-	const presetName = options.preset || config.preset
+	const userConfig = await loadUserAIConfig()
+	const presetName = options.preset || userConfig?.preset || config.preset
 	const preset = getPreset(presetName)
 	const validator = new FormatValidator(preset)
 
@@ -113,8 +123,7 @@ export async function interactiveCommit(
 		if (!lastCommit) {
 			throw new Error('No previous commit to amend')
 		}
-		console.log(`\n📝 Amending commit: ${lastCommit.hash.slice(0, 7)}`)
-		console.log(`   ${lastCommit.fullMessage.split('\n')[0]}\n`)
+		log.info(`Amending commit: ${lastCommit.hash.slice(0, 7)} ${lastCommit.fullMessage.split('\n')[0]}`)
 	}
 
 	// Stage all early so AI (and the rest of the flow) can see the diff
@@ -137,31 +146,29 @@ export async function interactiveCommit(
 	if (options.useAI) {
 		const available = await isAIAvailable(options.provider)
 		if (!available) {
-			console.error(`\n✗ ${NO_CLI_ERROR_MESSAGE}\n`)
+			log.error(NO_CLI_ERROR_MESSAGE)
 			throw new Error('No AI CLI available')
 		}
 
-		console.log('🤖 Generating commit message with AI...\n')
+		log.step('Generating commit message with AI...')
 		const diff = await git.getStagedDiff()
 		if (diff) {
-			const types = validator.getAvailableTypes().map((t) => t.value)
 			aiSuggestion = await generateCommitMessage(
 				diff,
 				{
 					branchName: await git.getBranchName(),
-					existingTypes: types,
+					existingTypes: validator.getAvailableTypes(),
+					presetName: preset.name,
+					template: preset.template,
 				},
 				options.provider,
 			)
 			if (aiSuggestion) {
-				console.log('✨ AI suggestion:')
-				console.log(
-					`   ${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`,
-				)
-				if (aiSuggestion.body) {
-					console.log(`   ${aiSuggestion.body.split('\n')[0]}...`)
-				}
-				console.log()
+				const header = `${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`
+				const body = aiSuggestion.body
+					? `\n${aiSuggestion.body}`
+					: ''
+				note(header + body, 'AI suggestion')
 
 				// Headless mode: auto-accept and commit immediately
 				if (options.headless) {
@@ -213,11 +220,11 @@ export async function interactiveCommit(
 					const full = aiSuggestion.body
 						? `${header}\n\n${aiSuggestion.body}`
 						: header
-					const edited = editInEditor(full)
+					const edited = await editInEditor(full)
 					const lines = edited.split('\n')
 					const headerLine = lines[0] ?? ''
 					const headerMatch = headerLine.match(
-						/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
+						/^(\S+)(?:\(([^)]*)\))?:\s*(.*)$/,
 					)
 					if (headerMatch) {
 						aiSuggestion = {
@@ -238,8 +245,8 @@ export async function interactiveCommit(
 					aiSuggestion = null
 				}
 			} else {
-				console.log(
-					'⚠  AI could not generate a suggestion, falling back to manual mode.\n',
+				log.warn(
+					'AI could not generate a suggestion, falling back to manual mode.',
 				)
 				if (options.headless) {
 					throw new Error('AI failed to generate a commit message')
@@ -265,18 +272,6 @@ export async function interactiveCommit(
 			}
 		}
 
-		let fullMessage = aiSuggestion.type
-		if (aiSuggestion.scope) fullMessage += `(${aiSuggestion.scope})`
-		if (aiSuggestion.breaking) fullMessage += '!'
-		fullMessage += `: ${aiSuggestion.message}`
-		if (aiSuggestion.body) fullMessage += `\n\n${aiSuggestion.body}`
-		if (aiSuggestion.breaking) {
-			fullMessage += `\n\nBREAKING CHANGE: ${aiSuggestion.breaking}`
-		}
-		if (coauthors.length > 0) {
-			fullMessage += `\n\n${coauthors.join('\n')}`
-		}
-
 		// Edit loop: preview → confirm/edit/cancel
 		let currentSuggestion = aiSuggestion
 		while (true) {
@@ -284,8 +279,7 @@ export async function interactiveCommit(
 			if (currentSuggestion.scope) fullMessage += `(${currentSuggestion.scope})`
 			if (currentSuggestion.breaking) fullMessage += '!'
 			fullMessage += `: ${currentSuggestion.message}`
-			if (currentSuggestion.body)
-				fullMessage += `\n\n${currentSuggestion.body}`
+			if (currentSuggestion.body) fullMessage += `\n\n${currentSuggestion.body}`
 			if (currentSuggestion.breaking) {
 				fullMessage += `\n\nBREAKING CHANGE: ${currentSuggestion.breaking}`
 			}
@@ -293,25 +287,18 @@ export async function interactiveCommit(
 				fullMessage += `\n\n${coauthors.join('\n')}`
 			}
 
-			console.log('\n📝 Commit preview:\n')
-			console.log(fullMessage)
-			console.log()
+			note(fullMessage, 'Commit preview')
 
-			const validationConfig =
-				config.validation || getDefaultValidationConfig()
+			const validationConfig = config.validation || getDefaultValidationConfig()
 			if (validationConfig.enabled) {
 				const validationResult = validateCommitMessage(
 					fullMessage,
 					validationConfig,
 				)
 				if (!validationResult.valid) {
-					console.log('❌ Validation failed:\n')
-					console.log(formatValidationResult(validationResult))
-					console.log()
+					log.error(`Validation failed:\n${formatValidationResult(validationResult)}`)
 				} else if (validationResult.warnings.length > 0) {
-					console.log('⚠️  Validation warnings:\n')
-					console.log(formatValidationResult(validationResult))
-					console.log()
+					log.warn(`Validation warnings:\n${formatValidationResult(validationResult)}`)
 				}
 			}
 
@@ -337,12 +324,10 @@ export async function interactiveCommit(
 				const editable = currentSuggestion.body
 					? `${currentSuggestion.type}${currentSuggestion.scope ? `(${currentSuggestion.scope})` : ''}: ${currentSuggestion.message}\n\n${currentSuggestion.body}`
 					: `${currentSuggestion.type}${currentSuggestion.scope ? `(${currentSuggestion.scope})` : ''}: ${currentSuggestion.message}`
-				const edited = editInEditor(editable)
+				const edited = await editInEditor(editable)
 				const lines = edited.split('\n')
 				const headerLine = lines[0] ?? ''
-				const headerMatch = headerLine.match(
-					/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
-				)
+				const headerMatch = headerLine.match(/^(\S+)(?:\(([^)]*)\))?:\s*(.*)$/)
 				if (headerMatch) {
 					currentSuggestion = {
 						...currentSuggestion,
@@ -613,9 +598,7 @@ export async function interactiveCommit(
 	let body = ''
 	const addBody = await confirm({
 		message: 'Add detailed body?',
-		initialValue:
-			config.defaults?.includeBody !== false ||
-			!!lastCommit?.body,
+		initialValue: config.defaults?.includeBody !== false || !!lastCommit?.body,
 	})
 
 	if (isCancel(addBody)) {
@@ -758,9 +741,7 @@ export async function interactiveCommit(
 		fullMessage += `\n\n${coauthorFooter}`
 	}
 
-	console.log('\n📝 Commit preview:\n')
-	console.log(fullMessage)
-	console.log()
+	note(fullMessage, 'Commit preview')
 
 	// Validate commit message
 	const validationConfig = config.validation || getDefaultValidationConfig()
@@ -771,9 +752,7 @@ export async function interactiveCommit(
 		)
 
 		if (!validationResult.valid) {
-			console.log('❌ Validation failed:\n')
-			console.log(formatValidationResult(validationResult))
-			console.log()
+			log.error(`Validation failed:\n${formatValidationResult(validationResult)}`)
 
 			const continueAnyway = await confirm({
 				message: 'Continue with invalid commit message?',
@@ -784,9 +763,7 @@ export async function interactiveCommit(
 				throw new Error('Cancelled')
 			}
 		} else if (validationResult.warnings.length > 0) {
-			console.log('⚠️  Validation warnings:\n')
-			console.log(formatValidationResult(validationResult))
-			console.log()
+			log.warn(`Validation warnings:\n${formatValidationResult(validationResult)}`)
 		}
 	}
 
@@ -922,14 +899,15 @@ export async function multiCommit(
 	options: InteractiveOptions,
 ): Promise<CommitResult[]> {
 	const config = await loadConfig()
-	const presetName = options.preset || config.preset
+	const userCfg = await loadUserAIConfig()
+	const presetName = options.preset || userCfg?.preset || config.preset
 	const preset = getPreset(presetName)
 	const validator = new FormatValidator(preset)
 	const git = new GitService()
 
 	const available = await isAIAvailable(options.provider)
 	if (!available) {
-		console.error(`\n✗ ${NO_CLI_ERROR_MESSAGE}\n`)
+		log.error(NO_CLI_ERROR_MESSAGE)
 		throw new Error('No AI CLI available. --multi requires AI.')
 	}
 
@@ -947,15 +925,16 @@ export async function multiCommit(
 		throw new Error('No staged files to commit')
 	}
 
-	console.log('🤖 Analyzing changes for multi-commit split...\n')
+	log.step('Analyzing changes for multi-commit split...')
 
-	const types = validator.getAvailableTypes().map((t) => t.value)
 	const plan = await generateMultiCommitPlan(
 		diff,
 		stagedFiles,
 		{
 			branchName: await git.getBranchName(),
-			existingTypes: types,
+			existingTypes: validator.getAvailableTypes(),
+			presetName: preset.name,
+			template: preset.template,
 		},
 		options.provider,
 	)
@@ -968,13 +947,13 @@ export async function multiCommit(
 
 	// Edit loop: show plan → confirm/edit/cancel
 	while (true) {
-		console.log(`📋 Proposed ${commits.length} commits:\n`)
-		for (const [i, commit] of commits.entries()) {
-			const header = `${commit.type}${commit.scope ? `(${commit.scope})` : ''}: ${commit.message}`
-			console.log(`  ${i + 1}. ${header}`)
-			console.log(`     Files: ${commit.files.join(', ')}`)
-		}
-		console.log()
+		const planText = commits
+			.map((commit, i) => {
+				const header = `${commit.type}${commit.scope ? `(${commit.scope})` : ''}: ${commit.message}`
+				return `${i + 1}. ${header}\n   Files: ${commit.files.join(', ')}`
+			})
+			.join('\n\n')
+		note(planText, `${commits.length} commits`)
 
 		if (options.headless) {
 			break
@@ -1008,7 +987,7 @@ export async function multiCommit(
 				})
 				.join('\n\n---\n\n')
 
-			const edited = editInEditor(editable)
+			const edited = await editInEditor(editable)
 			const blocks = edited.split(/\n---\n/).map((b) => b.trim())
 			commits = blocks
 				.filter((b) => b.length > 0)
@@ -1016,12 +995,10 @@ export async function multiCommit(
 					const lines = block.split('\n')
 					const headerLine = lines[0] ?? ''
 					const headerMatch = headerLine.match(
-						/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
+						/^(\S+)(?:\(([^)]*)\))?:\s*(.*)$/,
 					)
 
-					const filesLine = lines.find((l) =>
-						l.startsWith('Files:'),
-					)
+					const filesLine = lines.find((l) => l.startsWith('Files:'))
 					const files = filesLine
 						? filesLine
 								.replace('Files:', '')

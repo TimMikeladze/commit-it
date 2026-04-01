@@ -225,7 +225,6 @@ describe('README Examples - Programmatic API', () => {
 		test('should list all presets', () => {
 			const names = listPresets()
 			expect(names).toContain('conventional')
-			expect(names).toContain('angular')
 			expect(names).toContain('gitmoji')
 		})
 	})
@@ -238,12 +237,6 @@ describe('README Examples - Programmatic API', () => {
 			expect(preset.types.length).toBeGreaterThan(0)
 		})
 
-		test('should get angular preset', () => {
-			const preset = getPreset('angular')
-			expect(preset.name).toBe('Angular Style')
-			expect(preset.types).toBeDefined()
-		})
-
 		test('should get gitmoji preset', () => {
 			const preset = getPreset('gitmoji')
 			expect(preset.name).toBe('Gitmoji')
@@ -254,7 +247,6 @@ describe('README Examples - Programmatic API', () => {
 	describe('presets object', () => {
 		test('should access presets directly', () => {
 			expect(presets.conventional).toBeDefined()
-			expect(presets.angular).toBeDefined()
 			expect(presets.gitmoji).toBeDefined()
 		})
 	})
@@ -263,7 +255,6 @@ describe('README Examples - Programmatic API', () => {
 		test('should have default templates', () => {
 			expect(DEFAULT_TEMPLATES).toBeDefined()
 			expect(DEFAULT_TEMPLATES.conventional).toBeDefined()
-			expect(DEFAULT_TEMPLATES.angular).toBeDefined()
 			expect(DEFAULT_TEMPLATES.gitmoji).toBeDefined()
 		})
 	})

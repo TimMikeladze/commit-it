@@ -27,23 +27,6 @@ export const presets: Record<string, Preset> = {
 			),
 	},
 
-	angular: {
-		name: 'Angular Style',
-		template: '{type}({scope}): {message}',
-		types: [
-			{ value: 'feat', desc: '✨ Feature' },
-			{ value: 'fix', desc: '🐛 Bug fix' },
-			{ value: 'docs', desc: '📚 Documentation' },
-			{ value: 'style', desc: '💅 Formatting' },
-			{ value: 'refactor', desc: '♻️ Refactoring' },
-			{ value: 'perf', desc: '⚡ Performance' },
-			{ value: 'test', desc: '✅ Tests' },
-		],
-		scopes: [],
-		validator: (msg) =>
-			/^(feat|fix|docs|style|refactor|perf|test)(\([^)]+\))?: .+/.test(msg),
-	},
-
 	gitmoji: {
 		name: 'Gitmoji',
 		template: '{type} {message}',

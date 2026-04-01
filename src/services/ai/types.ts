@@ -16,7 +16,9 @@ export interface AICommitSuggestion {
 
 export interface GenerateContext {
 	branchName?: string
-	existingTypes?: string[]
+	existingTypes?: Array<{ value: string; desc: string }>
+	presetName?: string
+	template?: string
 }
 
 export interface AIMultiCommitSuggestion {
@@ -57,6 +59,8 @@ export const UserAIConfigSchema = z.object({
 			providers: z.array(ProviderConfigSchema).default([]),
 		})
 		.optional(),
+	editor: z.string().optional(),
+	preset: z.string().optional(),
 })
 
 export type UserAIConfig = z.infer<typeof UserAIConfigSchema>

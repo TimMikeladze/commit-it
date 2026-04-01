@@ -19,7 +19,11 @@ describe('buildPrompt', () => {
 
 	test('should include existing types when provided', () => {
 		const prompt = buildPrompt('diff', {
-			existingTypes: ['feat', 'fix', 'docs'],
+			existingTypes: [
+				{ value: 'feat', desc: 'A new feature' },
+				{ value: 'fix', desc: 'A bug fix' },
+				{ value: 'docs', desc: 'Documentation' },
+			],
 		})
 		expect(prompt).toContain('feat')
 		expect(prompt).toContain('fix')

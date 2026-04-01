@@ -275,12 +275,6 @@ describe('Template Service', () => {
 			expect(DEFAULT_TEMPLATES.conventional!).toContain('{{message}}')
 		})
 
-		test('should have angular template', () => {
-			expect(DEFAULT_TEMPLATES.angular!).toBeDefined()
-			expect(DEFAULT_TEMPLATES.angular!).toContain('{{type}}')
-			expect(DEFAULT_TEMPLATES.angular!).toContain('{{message}}')
-		})
-
 		test('should have gitmoji template', () => {
 			expect(DEFAULT_TEMPLATES.gitmoji!).toBeDefined()
 			expect(DEFAULT_TEMPLATES.gitmoji!).toContain('{{type}}')
@@ -296,14 +290,7 @@ describe('Template Service', () => {
 			expect(result).toBe('feat(api): add endpoint')
 		})
 
-		test('angular template should render correctly', () => {
-			const result = renderTemplate(DEFAULT_TEMPLATES.angular!, {
-				type: 'feat',
-				scope: 'api',
-				message: 'add endpoint',
-			})
-			expect(result).toBe('feat(api): add endpoint')
-		})
+
 
 		test('gitmoji template should render correctly', () => {
 			const result = renderTemplate(DEFAULT_TEMPLATES.gitmoji!, {

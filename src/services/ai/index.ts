@@ -3,6 +3,7 @@ import { createAgentAdapter } from './adapters/agent'
 import { createClaudeAdapter } from './adapters/claude'
 import { createCodexAdapter } from './adapters/codex'
 import { createCustomAdapter } from './adapters/custom'
+import { verbose } from '../../utils/verbose'
 import { loadUserAIConfig } from './config'
 import { detectAvailableCLI } from './detect'
 import type {
@@ -14,7 +15,12 @@ import type {
 	ProviderName,
 } from './types'
 
-export type { AICommitSuggestion, AIMultiCommitPlan, CLIAdapter, GenerateContext }
+export type {
+	AICommitSuggestion,
+	AIMultiCommitPlan,
+	CLIAdapter,
+	GenerateContext,
+}
 
 const MAX_DIFF_LENGTH = 8000
 
@@ -58,6 +64,7 @@ export function createAdapter(
 export async function resolveProvider(
 	providerOverride?: string,
 ): Promise<CLIAdapter> {
+	verbose('resolving AI provider...')
 	// 1. --provider flag override
 	if (providerOverride) {
 		const validNames: readonly string[] = ['claude', 'codex', 'agent', 'custom']
@@ -66,10 +73,12 @@ export async function resolveProvider(
 				`Unknown provider "${providerOverride}". Valid providers: ${validNames.join(', ')}`,
 			)
 		}
+		verbose(`provider override: ${providerOverride}`)
 		const adapter = createAdapter({
 			name: providerOverride as ProviderName,
 		})
 		if (await adapter.isAvailable()) {
+			verbose(`using provider: ${adapter.name}`)
 			return adapter
 		}
 		throw new Error(
@@ -81,6 +90,7 @@ export async function resolveProvider(
 	const userConfig = await loadUserAIConfig()
 	if (userConfig?.ai) {
 		const { provider, providers } = userConfig.ai
+		verbose(`config provider: ${provider ?? '(none)'}, providers: [${providers.map((p) => `${p.name}${p.model ? `:${p.model}` : ''}`).join(', ')}]`)
 
 		if (provider) {
 			const providerConfig = providers.find((p) => p.name === provider) ?? {
@@ -88,6 +98,7 @@ export async function resolveProvider(
 			}
 			const adapter = createAdapter(providerConfig)
 			if (await adapter.isAvailable()) {
+				verbose(`using provider: ${adapter.name}${providerConfig.model ? ` (model: ${providerConfig.model})` : ''}`)
 				return adapter
 			}
 		}
@@ -113,22 +124,27 @@ export async function resolveProvider(
 }
 
 export function buildPrompt(diff: string, context: GenerateContext): string {
-	const types =
-		context.existingTypes?.join(', ') ||
-		'feat, fix, docs, style, refactor, test, chore'
+	const typeList = context.existingTypes
+		?.map((t) => `${t.value} (${t.desc})`)
+		.join('\n  ') || 'feat, fix, docs, style, refactor, test, chore'
 
-	return `You are a commit message generator. Analyze the git diff and generate a conventional commit message.
+	const templateHint = context.template
+		? `\nThe commit format is: ${context.template}${context.presetName ? ` (${context.presetName} convention)` : ''}`
+		: ''
+
+	return `You are a commit message generator. Analyze the git diff and generate a commit message.${templateHint}
+
+Available types:
+  ${typeList}
 
 Output a JSON object with these fields:
-- type: one of ${types}
+- type: must be one of the available types above (use the exact value)
 - scope: optional, a short word describing the area of change
 - message: a concise description (imperative mood, no period, max 72 chars)
 - body: optional, longer description if the change is complex
 - breaking: optional, description of breaking changes if any
 
 Only output valid JSON, no markdown or explanation.
-
-Generate a commit message for this diff:
 ${context.branchName ? `\nBranch: ${context.branchName}` : ''}
 
 \`\`\`diff
@@ -163,8 +179,13 @@ export async function generateCommitMessage(
 	try {
 		const adapter = await resolveProvider(providerOverride)
 		const prompt = buildPrompt(diff, context ?? {})
+		verbose(`prompt length: ${prompt.length} chars, diff length: ${diff.length} chars`)
 		const output = await adapter.execute(prompt)
-		return parseAIResponse(output)
+		verbose(`AI response length: ${output.length} chars`)
+		verbose(`AI raw response:\n${output}`)
+		const parsed = parseAIResponse(output)
+		verbose(`parsed suggestion: ${parsed ? JSON.stringify(parsed) : 'null'}`)
+		return parsed
 	} catch (error) {
 		console.error(
 			'AI generation failed:',
@@ -179,11 +200,18 @@ export function buildMultiCommitPrompt(
 	files: string[],
 	context: GenerateContext,
 ): string {
-	const types =
-		context.existingTypes?.join(', ') ||
-		'feat, fix, docs, style, refactor, test, chore'
+	const typeList = context.existingTypes
+		?.map((t) => `${t.value} (${t.desc})`)
+		.join('\n  ') || 'feat, fix, docs, style, refactor, test, chore'
 
-	return `You are a commit message generator. Analyze the git diff and split the changes into multiple logical conventional commits.
+	const templateHint = context.template
+		? `\nThe commit format is: ${context.template}${context.presetName ? ` (${context.presetName} convention)` : ''}`
+		: ''
+
+	return `You are a commit message generator. Analyze the git diff and split the changes into multiple logical commits.${templateHint}
+
+Available types:
+  ${typeList}
 
 Group related changes together:
 - A feature and its tests belong in the same commit
@@ -193,7 +221,7 @@ Group related changes together:
 Each file must appear in exactly one commit. Order commits logically (e.g., refactoring before features).
 
 Output a JSON object with a "commits" array. Each commit has:
-- type: one of ${types}
+- type: must be one of the available types above (use the exact value)
 - scope: optional, a short word describing the area of change
 - message: a concise description (imperative mood, no period, max 72 chars)
 - body: optional, longer description if the change is complex
@@ -219,15 +247,13 @@ export function parseMultiCommitResponse(
 			const parsed = JSON.parse(jsonMatch[0])
 			if (parsed.commits && Array.isArray(parsed.commits)) {
 				return {
-					commits: parsed.commits.map(
-						(c: Record<string, unknown>) => ({
-							type: (c.type as string) || 'feat',
-							scope: c.scope as string | undefined,
-							message: (c.message as string) || 'update',
-							body: c.body as string | undefined,
-							files: Array.isArray(c.files) ? (c.files as string[]) : [],
-						}),
-					),
+					commits: parsed.commits.map((c: Record<string, unknown>) => ({
+						type: (c.type as string) || 'feat',
+						scope: c.scope as string | undefined,
+						message: (c.message as string) || 'update',
+						body: c.body as string | undefined,
+						files: Array.isArray(c.files) ? (c.files as string[]) : [],
+					})),
 				}
 			}
 		}
@@ -246,7 +272,10 @@ export async function generateMultiCommitPlan(
 	try {
 		const adapter = await resolveProvider(providerOverride)
 		const prompt = buildMultiCommitPrompt(diff, files, context ?? {})
+		verbose(`multi-commit prompt length: ${prompt.length} chars, files: ${files.length}`)
 		const output = await adapter.execute(prompt)
+		verbose(`AI response length: ${output.length} chars`)
+		verbose(`AI raw response:\n${output}`)
 		return parseMultiCommitResponse(output)
 	} catch (error) {
 		console.error(

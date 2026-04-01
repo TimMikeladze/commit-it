@@ -46,8 +46,7 @@ function renderPlaceholders(text: string, data: TemplateData): string {
 export const DEFAULT_TEMPLATES: Record<string, string> = {
 	conventional:
 		'{{type}}{{#scope}}({{scope}}){{/scope}}{{#breaking}}!{{/breaking}}: {{message}}',
-	angular: '{{type}}{{#scope}}({{scope}}){{/scope}}: {{message}}',
-	gitmoji: '{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}',
+gitmoji: '{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}',
 }
 
 /**

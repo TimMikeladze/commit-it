@@ -8,23 +8,29 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { loadUserAIConfig } from './ai/config'
 
-function getEditor(): string {
+async function getEditor(): Promise<string> {
+	const config = await loadUserAIConfig()
+	if (config?.editor) {
+		return config.editor
+	}
 	return process.env.VISUAL || process.env.EDITOR || 'vi'
 }
 
 /**
- * Opens the given text in the user's preferred editor ($VISUAL, $EDITOR, or vi).
+ * Opens the given text in the user's preferred editor.
+ * Resolution order: config.editor > $VISUAL > $EDITOR > vi
  * Returns the edited text, or the original if the editor exits with an error.
  */
-export function editInEditor(text: string): string {
+export async function editInEditor(text: string): Promise<string> {
 	const dir = mkdtempSync(join(tmpdir(), 'commit-it-'))
 	const file = join(dir, 'COMMIT_EDITMSG')
 
 	writeFileSync(file, text)
 
 	try {
-		const editor = getEditor()
+		const editor = await getEditor()
 		execSync(`${editor} "${file}"`, { stdio: 'inherit' })
 		return readFileSync(file, 'utf-8')
 	} catch {

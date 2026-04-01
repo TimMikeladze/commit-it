@@ -1,12 +1,9 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
 import { extraGitArgs } from '../cli'
-import {
-	directCommit,
-	interactiveCommit,
-	multiCommit,
-} from '../prompts/commitFlow'
+import { directCommit, interactiveCommit, multiCommit } from '../prompts/commitFlow'
 import { shouldAutoAI } from '../services/ai'
 import { needsSetup, runSetupWizard } from '../services/setup'
+import { setVerbose } from '../utils/verbose'
 
 export const commitCommand = command({
 	name: 'commit',
@@ -42,6 +39,9 @@ export const commitCommand = command({
 		multi: boolean('multi')
 			.desc('Split changes into multiple logical commits using AI')
 			.default(false),
+		verbose: boolean('verbose')
+			.desc('Show detailed output of commands being run')
+			.default(false),
 		yes: boolean('yes')
 			.alias('y')
 			.desc('Skip all prompts, accept defaults (headless mode for agents)')
@@ -49,6 +49,10 @@ export const commitCommand = command({
 	},
 	handler: async (opts) => {
 		try {
+			if (opts.verbose) {
+				setVerbose(true)
+			}
+
 			// First-run setup wizard (skip in headless mode)
 			if (!opts.yes && !opts.noAi && (await needsSetup())) {
 				const result = await runSetupWizard()
@@ -95,9 +99,7 @@ export const commitCommand = command({
 					extraArgs: passthroughArgs,
 				})
 				for (const result of results) {
-					console.log(
-						`✓ Commit created: ${result.hash}`,
-					)
+					console.log(`✓ Commit created: ${result.hash}`)
 				}
 				console.log(`\n✓ Created ${results.length} commits`)
 				return

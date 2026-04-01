@@ -8,6 +8,7 @@ import { configCommand } from './commands/config'
 import { installHookCommand, uninstallHookCommand } from './commands/hook'
 import { initCommand } from './commands/init'
 import { presetsCommand } from './commands/presets'
+import { setupCommand } from './commands/setup'
 import { validateCommand } from './commands/validate'
 
 const commands = [
@@ -19,6 +20,7 @@ const commands = [
 	initCommand,
 	presetsCommand,
 	configCommand,
+	setupCommand,
 	setupAliasCommand,
 ]
 
@@ -41,6 +43,7 @@ const knownCommands = new Set([
 	'init',
 	'presets',
 	'config',
+	'setup',
 	'setup-alias',
 ])
 

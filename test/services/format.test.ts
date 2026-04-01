@@ -29,30 +29,6 @@ describe('Format Service', () => {
 				expect(result.valid).toBe(true)
 			})
 
-			test('should validate angular format', () => {
-				const preset = getPreset('angular')
-				const validator = new FormatValidator(preset)
-				const result = validator.validateMessage(
-					'feat(core): implement feature',
-				)
-				expect(result.valid).toBe(true)
-			})
-
-			test('should reject invalid type in angular', () => {
-				const preset = getPreset('angular')
-				const validator = new FormatValidator(preset)
-				const result = validator.validateMessage('chore(core): update deps')
-				expect(result.valid).toBe(false)
-				expect(result.error).toBe('Message does not match Angular Style format')
-			})
-
-			test('should validate angular commit without scope', () => {
-				const preset = getPreset('angular')
-				const validator = new FormatValidator(preset)
-				const result = validator.validateMessage('docs: update README')
-				expect(result.valid).toBe(true)
-			})
-
 			test('should validate gitmoji format', () => {
 				const preset = getPreset('gitmoji')
 				const validator = new FormatValidator(preset)
@@ -106,14 +82,6 @@ describe('Format Service', () => {
 				expect(validator.validateType('fix')).toBe(true)
 				expect(validator.validateType('docs')).toBe(true)
 				expect(validator.validateType('invalid')).toBe(false)
-			})
-
-			test('should validate angular type', () => {
-				const preset = getPreset('angular')
-				const validator = new FormatValidator(preset)
-				expect(validator.validateType('feat')).toBe(true)
-				expect(validator.validateType('fix')).toBe(true)
-				expect(validator.validateType('chore')).toBe(false) // Not in angular
 			})
 
 			test('should validate gitmoji type', () => {
@@ -233,15 +201,6 @@ describe('Format Service', () => {
 				expect(types.some((t) => t.value === 'feat')).toBe(true)
 				expect(types.some((t) => t.value === 'fix')).toBe(true)
 				expect(types.some((t) => t.value === 'chore')).toBe(true)
-			})
-
-			test('should return angular types', () => {
-				const preset = getPreset('angular')
-				const validator = new FormatValidator(preset)
-				const types = validator.getAvailableTypes()
-				expect(types.length).toBeGreaterThan(0)
-				expect(types.some((t) => t.value === 'feat')).toBe(true)
-				expect(types.some((t) => t.value === 'chore')).toBe(false)
 			})
 
 			test('should return gitmoji types', () => {

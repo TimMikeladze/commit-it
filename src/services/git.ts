@@ -142,7 +142,7 @@ export class GitService {
 		const firstLine = lines[0] || ''
 
 		// Parse conventional commit format: type(scope)!: message
-		const match = firstLine.match(/^(\w+)(?:\(([^)]+)\))?(!)?\s*:\s*(.+)$/)
+		const match = firstLine.match(/^(\S+?)(?:\(([^)]+)\))?(!)?\s*:\s*(.+)$/)
 
 		const isFooterLine = (line: string): boolean =>
 			FOOTER_TOKEN_REGEX.test(line)

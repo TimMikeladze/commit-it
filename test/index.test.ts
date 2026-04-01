@@ -3,6 +3,6 @@ import { listPresets } from '../src'
 
 test('should export listPresets', () => {
 	const presets = listPresets()
-	expect(presets).toBeArrayOfSize(3)
+	expect(presets).toBeArrayOfSize(2)
 	expect(presets).toContain('conventional')
 })

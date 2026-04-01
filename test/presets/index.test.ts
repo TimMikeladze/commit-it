@@ -6,7 +6,6 @@ describe('Presets', () => {
 		test('should list all presets', () => {
 			const list = listPresets()
 			expect(list).toContain('conventional')
-			expect(list).toContain('angular')
 			expect(list).toContain('gitmoji')
 		})
 	})
@@ -17,11 +16,6 @@ describe('Presets', () => {
 			expect(preset.name).toBe('Conventional Commits')
 			expect(preset.types).toBeDefined()
 			expect(preset.types.length).toBeGreaterThan(0)
-		})
-
-		test('should get angular preset', () => {
-			const preset = getPreset('angular')
-			expect(preset.name).toBe('Angular Style')
 		})
 
 		test('should get gitmoji preset', () => {

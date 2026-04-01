@@ -70,12 +70,12 @@ describe('Configuration', () => {
 	describe('defineConfig', () => {
 		test('should define config with type safety', () => {
 			const config = defineConfig({
-				preset: 'angular',
+				preset: 'gitmoji',
 				scopeMap: {
 					'src/**': 'src',
 				},
 			})
-			expect(config.preset).toBe('angular')
+			expect(config.preset).toBe('gitmoji')
 			expect(config.scopeMap?.['src/**']).toBe('src')
 		})
 
