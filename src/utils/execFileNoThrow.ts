@@ -17,7 +17,9 @@ export async function execFileNoThrow(
 	verbose(`exec: ${command} ${args.join(' ')}`)
 	try {
 		const { stdout, stderr } = await execFileAsync(command, args)
-		verbose(`exit: 0 | stdout: ${stdout.length} chars | stderr: ${stderr.length} chars`)
+		verbose(
+			`exit: 0 | stdout: ${stdout.length} chars | stderr: ${stderr.length} chars`,
+		)
 		return { stdout, stderr, status: 0 }
 	} catch (error: unknown) {
 		if (error instanceof Error) {
@@ -27,7 +29,9 @@ export async function execFileNoThrow(
 				status?: number
 			}
 			const status = execError.status || 1
-			verbose(`exit: ${status} | stderr: ${execError.stderr || execError.message}`)
+			verbose(
+				`exit: ${status} | stderr: ${execError.stderr || execError.message}`,
+			)
 			return {
 				stdout: execError.stdout || '',
 				stderr: execError.stderr || execError.message || '',

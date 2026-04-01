@@ -290,8 +290,6 @@ describe('Template Service', () => {
 			expect(result).toBe('feat(api): add endpoint')
 		})
 
-
-
 		test('gitmoji template should render correctly', () => {
 			const result = renderTemplate(DEFAULT_TEMPLATES.gitmoji!, {
 				type: '✨',

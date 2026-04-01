@@ -123,7 +123,9 @@ export async function interactiveCommit(
 		if (!lastCommit) {
 			throw new Error('No previous commit to amend')
 		}
-		log.info(`Amending commit: ${lastCommit.hash.slice(0, 7)} ${lastCommit.fullMessage.split('\n')[0]}`)
+		log.info(
+			`Amending commit: ${lastCommit.hash.slice(0, 7)} ${lastCommit.fullMessage.split('\n')[0]}`,
+		)
 	}
 
 	// Stage all early so AI (and the rest of the flow) can see the diff
@@ -165,9 +167,7 @@ export async function interactiveCommit(
 			)
 			if (aiSuggestion) {
 				const header = `${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`
-				const body = aiSuggestion.body
-					? `\n${aiSuggestion.body}`
-					: ''
+				const body = aiSuggestion.body ? `\n${aiSuggestion.body}` : ''
 				note(header + body, 'AI suggestion')
 
 				// Headless mode: auto-accept and commit immediately
@@ -296,9 +296,13 @@ export async function interactiveCommit(
 					validationConfig,
 				)
 				if (!validationResult.valid) {
-					log.error(`Validation failed:\n${formatValidationResult(validationResult)}`)
+					log.error(
+						`Validation failed:\n${formatValidationResult(validationResult)}`,
+					)
 				} else if (validationResult.warnings.length > 0) {
-					log.warn(`Validation warnings:\n${formatValidationResult(validationResult)}`)
+					log.warn(
+						`Validation warnings:\n${formatValidationResult(validationResult)}`,
+					)
 				}
 			}
 
@@ -752,7 +756,9 @@ export async function interactiveCommit(
 		)
 
 		if (!validationResult.valid) {
-			log.error(`Validation failed:\n${formatValidationResult(validationResult)}`)
+			log.error(
+				`Validation failed:\n${formatValidationResult(validationResult)}`,
+			)
 
 			const continueAnyway = await confirm({
 				message: 'Continue with invalid commit message?',
@@ -763,7 +769,9 @@ export async function interactiveCommit(
 				throw new Error('Cancelled')
 			}
 		} else if (validationResult.warnings.length > 0) {
-			log.warn(`Validation warnings:\n${formatValidationResult(validationResult)}`)
+			log.warn(
+				`Validation warnings:\n${formatValidationResult(validationResult)}`,
+			)
 		}
 	}
 

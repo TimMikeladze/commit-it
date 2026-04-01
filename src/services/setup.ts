@@ -13,11 +13,26 @@ import { getConfigPath, loadUserAIConfig } from './ai/config'
 import { detectAvailableCLI } from './ai/detect'
 import type { ProviderName, UserAIConfig } from './ai/types'
 
-const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string; hint?: string }>> = {
+const PROVIDER_MODELS: Record<
+	string,
+	Array<{ value: string; label: string; hint?: string }>
+> = {
 	claude: [
-		{ value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', hint: 'fastest, recommended' },
-		{ value: 'claude-sonnet-4-6-20250514', label: 'Sonnet 4.6', hint: 'balanced' },
-		{ value: 'claude-opus-4-6-20250514', label: 'Opus 4.6', hint: 'most capable' },
+		{
+			value: 'claude-haiku-4-5-20251001',
+			label: 'Haiku 4.5',
+			hint: 'fastest, recommended',
+		},
+		{
+			value: 'claude-sonnet-4-6-20250514',
+			label: 'Sonnet 4.6',
+			hint: 'balanced',
+		},
+		{
+			value: 'claude-opus-4-6-20250514',
+			label: 'Opus 4.6',
+			hint: 'most capable',
+		},
 	],
 	codex: [
 		{ value: 'o4-mini', label: 'o4-mini', hint: 'fastest, recommended' },
@@ -25,9 +40,21 @@ const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string; hint
 		{ value: 'gpt-4.1', label: 'GPT-4.1', hint: 'most capable' },
 	],
 	agent: [
-		{ value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5', hint: 'fastest, recommended' },
-		{ value: 'claude-sonnet-4-6-20250514', label: 'Sonnet 4.6', hint: 'balanced' },
-		{ value: 'claude-opus-4-6-20250514', label: 'Opus 4.6', hint: 'most capable' },
+		{
+			value: 'claude-haiku-4-5-20251001',
+			label: 'Haiku 4.5',
+			hint: 'fastest, recommended',
+		},
+		{
+			value: 'claude-sonnet-4-6-20250514',
+			label: 'Sonnet 4.6',
+			hint: 'balanced',
+		},
+		{
+			value: 'claude-opus-4-6-20250514',
+			label: 'Opus 4.6',
+			hint: 'most capable',
+		},
 	],
 }
 
@@ -82,7 +109,7 @@ export async function runSetupWizard(): Promise<UserAIConfig | null> {
 		const selectedModel = await select({
 			message: 'Model',
 			options: models,
-			initialValue: models[0]!.value,
+			initialValue: models[0]?.value,
 		})
 
 		if (isCancel(selectedModel)) {

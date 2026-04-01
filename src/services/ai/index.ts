@@ -1,9 +1,9 @@
 import type { ExecResult } from '../../utils/execFileNoThrow'
+import { verbose } from '../../utils/verbose'
 import { createAgentAdapter } from './adapters/agent'
 import { createClaudeAdapter } from './adapters/claude'
 import { createCodexAdapter } from './adapters/codex'
 import { createCustomAdapter } from './adapters/custom'
-import { verbose } from '../../utils/verbose'
 import { loadUserAIConfig } from './config'
 import { detectAvailableCLI } from './detect'
 import type {
@@ -90,7 +90,9 @@ export async function resolveProvider(
 	const userConfig = await loadUserAIConfig()
 	if (userConfig?.ai) {
 		const { provider, providers } = userConfig.ai
-		verbose(`config provider: ${provider ?? '(none)'}, providers: [${providers.map((p) => `${p.name}${p.model ? `:${p.model}` : ''}`).join(', ')}]`)
+		verbose(
+			`config provider: ${provider ?? '(none)'}, providers: [${providers.map((p) => `${p.name}${p.model ? `:${p.model}` : ''}`).join(', ')}]`,
+		)
 
 		if (provider) {
 			const providerConfig = providers.find((p) => p.name === provider) ?? {
@@ -98,7 +100,9 @@ export async function resolveProvider(
 			}
 			const adapter = createAdapter(providerConfig)
 			if (await adapter.isAvailable()) {
-				verbose(`using provider: ${adapter.name}${providerConfig.model ? ` (model: ${providerConfig.model})` : ''}`)
+				verbose(
+					`using provider: ${adapter.name}${providerConfig.model ? ` (model: ${providerConfig.model})` : ''}`,
+				)
 				return adapter
 			}
 		}
@@ -124,9 +128,9 @@ export async function resolveProvider(
 }
 
 export function buildPrompt(diff: string, context: GenerateContext): string {
-	const typeList = context.existingTypes
-		?.map((t) => `${t.value} (${t.desc})`)
-		.join('\n  ') || 'feat, fix, docs, style, refactor, test, chore'
+	const typeList =
+		context.existingTypes?.map((t) => `${t.value} (${t.desc})`).join('\n  ') ||
+		'feat, fix, docs, style, refactor, test, chore'
 
 	const templateHint = context.template
 		? `\nThe commit format is: ${context.template}${context.presetName ? ` (${context.presetName} convention)` : ''}`
@@ -179,7 +183,9 @@ export async function generateCommitMessage(
 	try {
 		const adapter = await resolveProvider(providerOverride)
 		const prompt = buildPrompt(diff, context ?? {})
-		verbose(`prompt length: ${prompt.length} chars, diff length: ${diff.length} chars`)
+		verbose(
+			`prompt length: ${prompt.length} chars, diff length: ${diff.length} chars`,
+		)
 		const output = await adapter.execute(prompt)
 		verbose(`AI response length: ${output.length} chars`)
 		verbose(`AI raw response:\n${output}`)
@@ -200,9 +206,9 @@ export function buildMultiCommitPrompt(
 	files: string[],
 	context: GenerateContext,
 ): string {
-	const typeList = context.existingTypes
-		?.map((t) => `${t.value} (${t.desc})`)
-		.join('\n  ') || 'feat, fix, docs, style, refactor, test, chore'
+	const typeList =
+		context.existingTypes?.map((t) => `${t.value} (${t.desc})`).join('\n  ') ||
+		'feat, fix, docs, style, refactor, test, chore'
 
 	const templateHint = context.template
 		? `\nThe commit format is: ${context.template}${context.presetName ? ` (${context.presetName} convention)` : ''}`
@@ -272,7 +278,9 @@ export async function generateMultiCommitPlan(
 	try {
 		const adapter = await resolveProvider(providerOverride)
 		const prompt = buildMultiCommitPrompt(diff, files, context ?? {})
-		verbose(`multi-commit prompt length: ${prompt.length} chars, files: ${files.length}`)
+		verbose(
+			`multi-commit prompt length: ${prompt.length} chars, files: ${files.length}`,
+		)
 		const output = await adapter.execute(prompt)
 		verbose(`AI response length: ${output.length} chars`)
 		verbose(`AI raw response:\n${output}`)

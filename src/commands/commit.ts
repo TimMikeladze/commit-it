@@ -1,6 +1,10 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
 import { extraGitArgs } from '../cli'
-import { directCommit, interactiveCommit, multiCommit } from '../prompts/commitFlow'
+import {
+	directCommit,
+	interactiveCommit,
+	multiCommit,
+} from '../prompts/commitFlow'
 import { shouldAutoAI } from '../services/ai'
 import { needsSetup, runSetupWizard } from '../services/setup'
 import { setVerbose } from '../utils/verbose'
