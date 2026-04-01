@@ -19,6 +19,18 @@ export interface GenerateContext {
 	existingTypes?: string[]
 }
 
+export interface AIMultiCommitSuggestion {
+	type: string
+	scope?: string
+	message: string
+	body?: string
+	files: string[]
+}
+
+export interface AIMultiCommitPlan {
+	commits: AIMultiCommitSuggestion[]
+}
+
 export const AICommitSuggestionSchema = z.object({
 	type: z.string(),
 	scope: z.string().optional(),

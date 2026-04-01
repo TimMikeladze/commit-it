@@ -4,6 +4,7 @@ import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import {
 	generateCommitMessage,
+	generateMultiCommitPlan,
 	isAIAvailable,
 	NO_CLI_ERROR_MESSAGE,
 } from '../services/ai'
@@ -39,6 +40,7 @@ export interface InteractiveOptions {
 	provider?: string
 	coAuthor?: string
 	headless?: boolean
+	multi?: boolean
 	extraArgs?: string[]
 }
 
@@ -115,6 +117,21 @@ export async function interactiveCommit(
 		console.log(`   ${lastCommit.fullMessage.split('\n')[0]}\n`)
 	}
 
+	// Stage all early so AI (and the rest of the flow) can see the diff
+	if (options.stageAll) {
+		await git.stageAll()
+	}
+
+	// Check for staged changes
+	if (!options.amend) {
+		const status = await git.getStatus()
+		if (status.staged.length === 0) {
+			throw new Error(
+				'No staged changes. Stage files with `git add` first, or use --all.',
+			)
+		}
+	}
+
 	// AI generation (if requested)
 	let aiSuggestion = null
 	if (options.useAI) {
@@ -148,9 +165,6 @@ export async function interactiveCommit(
 
 				// Headless mode: auto-accept and commit immediately
 				if (options.headless) {
-					if (options.stageAll) {
-						await git.stageAll()
-					}
 					const coauthors: string[] = []
 					if (options.coAuthor) {
 						const configCoAuthors = config.coauthors || {}
@@ -223,14 +237,143 @@ export async function interactiveCommit(
 				} else if (aiAction === 'decline') {
 					aiSuggestion = null
 				}
-			} else if (options.headless) {
-				throw new Error('AI failed to generate a commit message')
+			} else {
+				console.log(
+					'⚠  AI could not generate a suggestion, falling back to manual mode.\n',
+				)
+				if (options.headless) {
+					throw new Error('AI failed to generate a commit message')
+				}
 			}
-		} else if (options.headless) {
-			throw new Error('No staged changes to generate a commit message from')
 		}
 	} else if (options.headless) {
 		throw new Error('Headless mode requires --ai flag')
+	}
+
+	// AI accepted — skip manual prompts, go to preview/confirm
+	if (aiSuggestion) {
+		const coauthors: string[] = []
+		if (options.coAuthor) {
+			const configCoAuthors = config.coauthors || {}
+			const coauthorValue = configCoAuthors[options.coAuthor]
+			if (coauthorValue) {
+				const parsed = parseCoAuthor(coauthorValue)
+				if (parsed) coauthors.push(formatCoAuthor(parsed))
+			} else {
+				const parsed = parseCoAuthor(options.coAuthor)
+				if (parsed) coauthors.push(formatCoAuthor(parsed))
+			}
+		}
+
+		let fullMessage = aiSuggestion.type
+		if (aiSuggestion.scope) fullMessage += `(${aiSuggestion.scope})`
+		if (aiSuggestion.breaking) fullMessage += '!'
+		fullMessage += `: ${aiSuggestion.message}`
+		if (aiSuggestion.body) fullMessage += `\n\n${aiSuggestion.body}`
+		if (aiSuggestion.breaking) {
+			fullMessage += `\n\nBREAKING CHANGE: ${aiSuggestion.breaking}`
+		}
+		if (coauthors.length > 0) {
+			fullMessage += `\n\n${coauthors.join('\n')}`
+		}
+
+		// Edit loop: preview → confirm/edit/cancel
+		let currentSuggestion = aiSuggestion
+		while (true) {
+			let fullMessage = currentSuggestion.type
+			if (currentSuggestion.scope) fullMessage += `(${currentSuggestion.scope})`
+			if (currentSuggestion.breaking) fullMessage += '!'
+			fullMessage += `: ${currentSuggestion.message}`
+			if (currentSuggestion.body)
+				fullMessage += `\n\n${currentSuggestion.body}`
+			if (currentSuggestion.breaking) {
+				fullMessage += `\n\nBREAKING CHANGE: ${currentSuggestion.breaking}`
+			}
+			if (coauthors.length > 0) {
+				fullMessage += `\n\n${coauthors.join('\n')}`
+			}
+
+			console.log('\n📝 Commit preview:\n')
+			console.log(fullMessage)
+			console.log()
+
+			const validationConfig =
+				config.validation || getDefaultValidationConfig()
+			if (validationConfig.enabled) {
+				const validationResult = validateCommitMessage(
+					fullMessage,
+					validationConfig,
+				)
+				if (!validationResult.valid) {
+					console.log('❌ Validation failed:\n')
+					console.log(formatValidationResult(validationResult))
+					console.log()
+				} else if (validationResult.warnings.length > 0) {
+					console.log('⚠️  Validation warnings:\n')
+					console.log(formatValidationResult(validationResult))
+					console.log()
+				}
+			}
+
+			const action = await select({
+				message: options.amend ? 'Amend commit?' : 'Create commit?',
+				options: [
+					{ value: 'confirm', label: 'Confirm' },
+					{
+						value: 'edit',
+						label: 'Edit in $EDITOR',
+						hint: process.env.VISUAL || process.env.EDITOR || 'vi',
+					},
+					{ value: 'cancel', label: 'Cancel' },
+				],
+				initialValue: 'confirm',
+			})
+
+			if (isCancel(action) || action === 'cancel') {
+				throw new Error('Cancelled')
+			}
+
+			if (action === 'edit') {
+				const editable = currentSuggestion.body
+					? `${currentSuggestion.type}${currentSuggestion.scope ? `(${currentSuggestion.scope})` : ''}: ${currentSuggestion.message}\n\n${currentSuggestion.body}`
+					: `${currentSuggestion.type}${currentSuggestion.scope ? `(${currentSuggestion.scope})` : ''}: ${currentSuggestion.message}`
+				const edited = editInEditor(editable)
+				const lines = edited.split('\n')
+				const headerLine = lines[0] ?? ''
+				const headerMatch = headerLine.match(
+					/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
+				)
+				if (headerMatch) {
+					currentSuggestion = {
+						...currentSuggestion,
+						type: headerMatch[1]!,
+						scope: headerMatch[2] || undefined,
+						message: headerMatch[3]!,
+						body: lines.slice(2).join('\n').trim() || undefined,
+					}
+				} else {
+					currentSuggestion = {
+						...currentSuggestion,
+						message: headerLine,
+						body: lines.slice(2).join('\n').trim() || undefined,
+					}
+				}
+				continue
+			}
+
+			// Confirmed
+			return git.createCommit({
+				type: currentSuggestion.type,
+				scope: currentSuggestion.scope,
+				message: currentSuggestion.message,
+				body: currentSuggestion.body,
+				breaking: currentSuggestion.breaking,
+				coauthors,
+				dryRun: options.dryRun,
+				amend: options.amend,
+				extraArgs: options.extraArgs,
+			})
+		}
 	}
 
 	// 1. Select commit type
@@ -243,7 +386,6 @@ export async function interactiveCommit(
 			hint: t.desc,
 		})),
 		initialValue:
-			aiSuggestion?.type ||
 			lastCommit?.type ||
 			context.suggestedType ||
 			availableTypes[0]?.value ||
@@ -263,7 +405,7 @@ export async function interactiveCommit(
 	const scopeOptions: Array<{ value: string; label: string }> = []
 
 	// Add AI/last commit scope first if available
-	const suggestedScope = aiSuggestion?.scope || lastCommit?.scope
+	const suggestedScope = lastCommit?.scope
 	if (
 		suggestedScope &&
 		!scopeSuggestions.find((s) => s.value === suggestedScope)
@@ -458,7 +600,7 @@ export async function interactiveCommit(
 	const message = await text({
 		message: 'Commit message',
 		placeholder: 'Concise description of changes',
-		initialValue: aiSuggestion?.message || lastCommit?.message || '',
+		initialValue: lastCommit?.message || '',
 		validate: (val) =>
 			val && val.length > 0 ? undefined : 'Message cannot be empty',
 	})
@@ -473,7 +615,6 @@ export async function interactiveCommit(
 		message: 'Add detailed body?',
 		initialValue:
 			config.defaults?.includeBody !== false ||
-			!!aiSuggestion?.body ||
 			!!lastCommit?.body,
 	})
 
@@ -485,7 +626,7 @@ export async function interactiveCommit(
 		const bodyText = await text({
 			message: 'Body (details, motivation, etc.)',
 			placeholder: 'Optional detailed description',
-			initialValue: aiSuggestion?.body || lastCommit?.body || '',
+			initialValue: lastCommit?.body || '',
 		})
 
 		if (!isCancel(bodyText)) {
@@ -659,10 +800,6 @@ export async function interactiveCommit(
 	}
 
 	// 9. Create commit
-	if (options.stageAll) {
-		await git.stageAll()
-	}
-
 	const result = await git.createCommit({
 		type,
 		scope: headerScope || undefined,
@@ -776,4 +913,172 @@ export async function directCommit(
 		amend: options.amend,
 		extraArgs: options.extraArgs,
 	})
+}
+
+/**
+ * Multi-commit — uses AI to split staged changes into multiple logical commits.
+ */
+export async function multiCommit(
+	options: InteractiveOptions,
+): Promise<CommitResult[]> {
+	const config = await loadConfig()
+	const presetName = options.preset || config.preset
+	const preset = getPreset(presetName)
+	const validator = new FormatValidator(preset)
+	const git = new GitService()
+
+	const available = await isAIAvailable(options.provider)
+	if (!available) {
+		console.error(`\n✗ ${NO_CLI_ERROR_MESSAGE}\n`)
+		throw new Error('No AI CLI available. --multi requires AI.')
+	}
+
+	if (options.stageAll) {
+		await git.stageAll()
+	}
+
+	const diff = await git.getStagedDiff()
+	if (!diff) {
+		throw new Error('No staged changes to commit')
+	}
+
+	const stagedFiles = await git.getStagedFiles()
+	if (stagedFiles.length === 0) {
+		throw new Error('No staged files to commit')
+	}
+
+	console.log('🤖 Analyzing changes for multi-commit split...\n')
+
+	const types = validator.getAvailableTypes().map((t) => t.value)
+	const plan = await generateMultiCommitPlan(
+		diff,
+		stagedFiles,
+		{
+			branchName: await git.getBranchName(),
+			existingTypes: types,
+		},
+		options.provider,
+	)
+
+	if (!plan || plan.commits.length === 0) {
+		throw new Error('AI failed to generate a multi-commit plan')
+	}
+
+	let commits = plan.commits
+
+	// Edit loop: show plan → confirm/edit/cancel
+	while (true) {
+		console.log(`📋 Proposed ${commits.length} commits:\n`)
+		for (const [i, commit] of commits.entries()) {
+			const header = `${commit.type}${commit.scope ? `(${commit.scope})` : ''}: ${commit.message}`
+			console.log(`  ${i + 1}. ${header}`)
+			console.log(`     Files: ${commit.files.join(', ')}`)
+		}
+		console.log()
+
+		if (options.headless) {
+			break
+		}
+
+		const action = await select({
+			message: 'Create these commits?',
+			options: [
+				{ value: 'confirm', label: 'Confirm' },
+				{
+					value: 'edit',
+					label: 'Edit in $EDITOR',
+					hint: process.env.VISUAL || process.env.EDITOR || 'vi',
+				},
+				{ value: 'cancel', label: 'Cancel' },
+			],
+			initialValue: 'confirm',
+		})
+
+		if (isCancel(action) || action === 'cancel') {
+			throw new Error('Cancelled')
+		}
+
+		if (action === 'edit') {
+			const editable = commits
+				.map((c) => {
+					let block = `${c.type}${c.scope ? `(${c.scope})` : ''}: ${c.message}`
+					if (c.body) block += `\n${c.body}`
+					block += `\nFiles: ${c.files.join(', ')}`
+					return block
+				})
+				.join('\n\n---\n\n')
+
+			const edited = editInEditor(editable)
+			const blocks = edited.split(/\n---\n/).map((b) => b.trim())
+			commits = blocks
+				.filter((b) => b.length > 0)
+				.map((block) => {
+					const lines = block.split('\n')
+					const headerLine = lines[0] ?? ''
+					const headerMatch = headerLine.match(
+						/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
+					)
+
+					const filesLine = lines.find((l) =>
+						l.startsWith('Files:'),
+					)
+					const files = filesLine
+						? filesLine
+								.replace('Files:', '')
+								.split(',')
+								.map((f) => f.trim())
+								.filter(Boolean)
+						: []
+
+					const bodyLines = lines
+						.slice(1)
+						.filter((l) => !l.startsWith('Files:'))
+					const body = bodyLines.join('\n').trim() || undefined
+
+					if (headerMatch) {
+						return {
+							type: headerMatch[1]!,
+							scope: headerMatch[2] || undefined,
+							message: headerMatch[3]!,
+							body,
+							files,
+						}
+					}
+					return {
+						type: 'chore',
+						message: headerLine,
+						body,
+						files,
+					}
+				})
+			continue
+		}
+
+		break
+	}
+
+	if (options.dryRun) {
+		return commits.map((commit) => ({
+			hash: 'dry-run',
+			message: `${commit.type}${commit.scope ? `(${commit.scope})` : ''}: ${commit.message}`,
+		}))
+	}
+
+	await git.unstageAll()
+
+	const results: CommitResult[] = []
+	for (const commit of commits) {
+		await git.stageFiles(commit.files)
+		const result = await git.createCommit({
+			type: commit.type,
+			scope: commit.scope,
+			message: commit.message,
+			body: commit.body,
+			dryRun: false,
+			extraArgs: options.extraArgs,
+		})
+		results.push(result)
+	}
+
+	return results
 }

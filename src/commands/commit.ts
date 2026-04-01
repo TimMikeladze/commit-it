@@ -1,6 +1,10 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
 import { extraGitArgs } from '../cli'
-import { directCommit, interactiveCommit } from '../prompts/commitFlow'
+import {
+	directCommit,
+	interactiveCommit,
+	multiCommit,
+} from '../prompts/commitFlow'
 import { shouldAutoAI } from '../services/ai'
 import { needsSetup, runSetupWizard } from '../services/setup'
 
@@ -35,6 +39,9 @@ export const commitCommand = command({
 		coAuthor: string('co-author')
 			.alias('c')
 			.desc('Add co-author (alias or "Name <email>")'),
+		multi: boolean('multi')
+			.desc('Split changes into multiple logical commits using AI')
+			.default(false),
 		yes: boolean('yes')
 			.alias('y')
 			.desc('Skip all prompts, accept defaults (headless mode for agents)')
@@ -69,6 +76,30 @@ export const commitCommand = command({
 				console.log(
 					`✓ Commit ${opts.amend ? 'amended' : 'created'}: ${commit.hash}`,
 				)
+				return
+			}
+
+			// Multi-commit mode
+			if (opts.multi) {
+				if (opts.noAi) {
+					console.error('✗ --multi requires AI. Cannot use with --no-ai.')
+					process.exit(1)
+				}
+				const results = await multiCommit({
+					skipGithub: opts.noGithub,
+					dryRun: opts.dryRun,
+					stageAll: opts.all,
+					provider: opts.provider,
+					coAuthor: opts.coAuthor,
+					headless: opts.yes,
+					extraArgs: passthroughArgs,
+				})
+				for (const result of results) {
+					console.log(
+						`✓ Commit created: ${result.hash}`,
+					)
+				}
+				console.log(`\n✓ Created ${results.length} commits`)
 				return
 			}
 

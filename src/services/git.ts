@@ -88,6 +88,30 @@ export class GitService {
 	}
 
 	/**
+	 * Get list of staged file paths
+	 */
+	async getStagedFiles(): Promise<string[]> {
+		const status = await this.git.status()
+		return status.files
+			.filter((f) => f.index !== ' ' && f.index !== '?')
+			.map((f) => f.path)
+	}
+
+	/**
+	 * Stage specific files
+	 */
+	async stageFiles(files: string[]): Promise<void> {
+		await this.git.add(files)
+	}
+
+	/**
+	 * Unstage all staged files
+	 */
+	async unstageAll(): Promise<void> {
+		await this.git.reset(['HEAD'])
+	}
+
+	/**
 	 * Get all changed files (both staged and unstaged)
 	 */
 	async getChangedFiles(): Promise<string[]> {

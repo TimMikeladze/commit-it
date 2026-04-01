@@ -7,13 +7,14 @@ import { loadUserAIConfig } from './config'
 import { detectAvailableCLI } from './detect'
 import type {
 	AICommitSuggestion,
+	AIMultiCommitPlan,
 	CLIAdapter,
 	GenerateContext,
 	ProviderConfig,
 	ProviderName,
 } from './types'
 
-export type { AICommitSuggestion, CLIAdapter, GenerateContext }
+export type { AICommitSuggestion, AIMultiCommitPlan, CLIAdapter, GenerateContext }
 
 const MAX_DIFF_LENGTH = 8000
 
@@ -167,6 +168,89 @@ export async function generateCommitMessage(
 	} catch (error) {
 		console.error(
 			'AI generation failed:',
+			error instanceof Error ? error.message : error,
+		)
+		return null
+	}
+}
+
+export function buildMultiCommitPrompt(
+	diff: string,
+	files: string[],
+	context: GenerateContext,
+): string {
+	const types =
+		context.existingTypes?.join(', ') ||
+		'feat, fix, docs, style, refactor, test, chore'
+
+	return `You are a commit message generator. Analyze the git diff and split the changes into multiple logical conventional commits.
+
+Group related changes together:
+- A feature and its tests belong in the same commit
+- Configuration changes can be separate from code changes
+- Refactoring should be separate from feature work
+
+Each file must appear in exactly one commit. Order commits logically (e.g., refactoring before features).
+
+Output a JSON object with a "commits" array. Each commit has:
+- type: one of ${types}
+- scope: optional, a short word describing the area of change
+- message: a concise description (imperative mood, no period, max 72 chars)
+- body: optional, longer description if the change is complex
+- files: array of file paths that belong in this commit
+
+Staged files:
+${files.join('\n')}
+
+Only output valid JSON, no markdown or explanation.
+${context.branchName ? `\nBranch: ${context.branchName}` : ''}
+
+\`\`\`diff
+${diff.slice(0, MAX_DIFF_LENGTH)}
+\`\`\``
+}
+
+export function parseMultiCommitResponse(
+	text: string,
+): AIMultiCommitPlan | null {
+	try {
+		const jsonMatch = text.match(/\{[\s\S]*\}/)
+		if (jsonMatch) {
+			const parsed = JSON.parse(jsonMatch[0])
+			if (parsed.commits && Array.isArray(parsed.commits)) {
+				return {
+					commits: parsed.commits.map(
+						(c: Record<string, unknown>) => ({
+							type: (c.type as string) || 'feat',
+							scope: c.scope as string | undefined,
+							message: (c.message as string) || 'update',
+							body: c.body as string | undefined,
+							files: Array.isArray(c.files) ? (c.files as string[]) : [],
+						}),
+					),
+				}
+			}
+		}
+	} catch {
+		// Ignore parse errors
+	}
+	return null
+}
+
+export async function generateMultiCommitPlan(
+	diff: string,
+	files: string[],
+	context?: GenerateContext,
+	providerOverride?: string,
+): Promise<AIMultiCommitPlan | null> {
+	try {
+		const adapter = await resolveProvider(providerOverride)
+		const prompt = buildMultiCommitPrompt(diff, files, context ?? {})
+		const output = await adapter.execute(prompt)
+		return parseMultiCommitResponse(output)
+	} catch (error) {
+		console.error(
+			'AI multi-commit generation failed:',
 			error instanceof Error ? error.message : error,
 		)
 		return null
