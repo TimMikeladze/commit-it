@@ -33,7 +33,26 @@ export interface AIMultiCommitPlan {
 	commits: AIMultiCommitSuggestion[]
 }
 
-export const AICommitSuggestionSchema = z.object({
+export interface ProviderConfig {
+	name: 'claude' | 'codex' | 'agent' | 'custom'
+	model?: string
+	command?: string
+	diffFlag?: string
+}
+
+export type ProviderName = ProviderConfig['name']
+
+export interface UserAIConfig {
+	ai?: {
+		auto: boolean
+		provider?: ProviderName
+		providers: ProviderConfig[]
+	}
+	editor?: string
+	preset?: string
+}
+
+export const AICommitSuggestionSchema: z.ZodType<AICommitSuggestion> = z.object({
 	type: z.string(),
 	scope: z.string().optional(),
 	message: z.string(),
@@ -41,17 +60,14 @@ export const AICommitSuggestionSchema = z.object({
 	breaking: z.string().optional(),
 })
 
-export const ProviderConfigSchema = z.object({
+export const ProviderConfigSchema: z.ZodType<ProviderConfig> = z.object({
 	name: z.enum(['claude', 'codex', 'agent', 'custom']),
 	model: z.string().optional(),
 	command: z.string().optional(),
 	diffFlag: z.string().optional(),
 })
 
-export type ProviderConfig = z.infer<typeof ProviderConfigSchema>
-export type ProviderName = ProviderConfig['name']
-
-export const UserAIConfigSchema = z.object({
+export const UserAIConfigSchema: z.ZodType<UserAIConfig> = z.object({
 	ai: z
 		.object({
 			auto: z.boolean().default(false),
@@ -62,5 +78,3 @@ export const UserAIConfigSchema = z.object({
 	editor: z.string().optional(),
 	preset: z.string().optional(),
 })
-
-export type UserAIConfig = z.infer<typeof UserAIConfigSchema>
