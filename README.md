@@ -1,6 +1,6 @@
 # commit-it
 
-Interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation, co-author support, and configurable validation. Works as both a CLI tool and a programmatic library.
+Interactive CLI for creating standardized git commits with GitHub integration, AI-powered message generation (via Claude Code, Codex, or any CLI), co-author support, headless mode for agents, and configurable validation. Works as both a CLI tool and a programmatic library.
 
 ## Table of Contents
 
@@ -499,13 +499,6 @@ export default defineConfig({
   coauthors: {
     alice: 'Alice Smith <alice@example.com>',
     bob: 'Bob Jones <bob@example.com>',
-  },
-
-  // ─── AI ───────────────────────────────────────────────────
-  ai: {
-    enabled: false,       // Enable AI commit message generation
-    provider: 'auto',     // 'openai' | 'anthropic' | 'auto'
-    model: undefined,     // Override default model name
   },
 
   // ─── GitHub ───────────────────────────────────────────────
@@ -1203,7 +1196,10 @@ const result = await interactiveCommit({
   amend: false,
   breaking: false,
   useAI: true,
+  provider: 'claude',       // AI provider override
   coAuthor: 'bob',
+  headless: false,          // true for non-interactive (agent) mode
+  extraArgs: ['--signoff'], // forwarded to git commit
 })
 
 console.log(result.hash)    // commit SHA
@@ -1703,7 +1699,6 @@ const defaults = getDefaultConfig()
 //   defaults: { scope: '', includeBody: true },
 //   plugins: [],
 //   validation: { enabled: true, maxHeaderLength: 72, ... },
-//   ai: { enabled: false, provider: 'auto' },
 //   github: { enabled: true, scopeLabelPatterns: [...], ... },
 // }
 ```
@@ -1781,16 +1776,13 @@ export default defineConfig({
 
 ### AI-First (let the AI handle it)
 
+AI config is per-user, not per-project. Run `commit-it` once to go through the setup wizard, or create `~/.commit-it/config.json` with `{ "ai": { "auto": true, "provider": "claude" } }`.
+
 ```typescript
 import { defineConfig } from 'commit-it'
 
 export default defineConfig({
   preset: 'conventional',
-  ai: {
-    enabled: true,
-    provider: 'auto',
-    model: 'gpt-4o-mini',
-  },
   scopeMap: {
     'src/api/**': 'api',
     'src/cli/**': 'cli',
@@ -1849,7 +1841,6 @@ import { defineConfig } from 'commit-it'
 export default defineConfig({
   preset: 'conventional',
   github: { enabled: false },
-  ai: { enabled: false },
   validation: {
     enabled: true,
     maxHeaderLength: 100,
@@ -2048,12 +2039,19 @@ src/
 ├── prompts/
 │   └── commitFlow.ts            Full interactive commit flow orchestration
 ├── services/
-│   ├── ai.ts                    AI generation (OpenAI/Anthropic via Vercel AI SDK)
+│   ├── ai.ts                    AI generation orchestration (provider resolution, prompt, parsing)
+│   ├── ai/
+│   │   ├── adapters/            CLI adapters (claude, codex, agent, custom)
+│   │   ├── config.ts            Per-user AI config (~/.commit-it/config.json)
+│   │   ├── detect.ts            Auto-detect available AI CLIs from $PATH
+│   │   └── types.ts             AI types and Zod schemas
 │   ├── coauthor.ts              Co-author parsing, formatting, GitHub lookup
+│   ├── editor.ts                Open $EDITOR for commit message editing
 │   ├── format.ts                Preset-based format validation
 │   ├── git.ts                   Git operations (simple-git wrapper)
 │   ├── github.ts                GitHub CLI (gh) wrapper
 │   ├── scope.ts                 Scope suggestions from config map + labels
+│   ├── setup.ts                 First-run setup wizard
 │   ├── template.ts              Mustache-like commit message templating
 │   └── validation.ts            Rule-based commit message validation
 └── utils/
@@ -2070,9 +2068,6 @@ src/
 | [@inquirer/search](https://github.com/SBoudrias/Inquirer.js) | Async search prompt (issue search) |
 | [simple-git](https://github.com/steveukx/git-js) | Git operations |
 | [c12](https://github.com/unjs/c12) | Config file loading (TS, JS, JSON, YAML, package.json) |
-| [ai](https://sdk.vercel.ai) | Vercel AI SDK for LLM integration |
-| [@ai-sdk/openai](https://www.npmjs.com/package/@ai-sdk/openai) | OpenAI provider |
-| [@ai-sdk/anthropic](https://www.npmjs.com/package/@ai-sdk/anthropic) | Anthropic provider |
 | [micromatch](https://github.com/micromatch/micromatch) | Glob pattern matching for scope maps |
 | [zod](https://zod.dev) | Config schema validation |
 
