@@ -52,13 +52,15 @@ export interface UserAIConfig {
 	preset?: string
 }
 
-export const AICommitSuggestionSchema: z.ZodType<AICommitSuggestion> = z.object({
-	type: z.string(),
-	scope: z.string().optional(),
-	message: z.string(),
-	body: z.string().optional(),
-	breaking: z.string().optional(),
-})
+export const AICommitSuggestionSchema: z.ZodType<AICommitSuggestion> = z.object(
+	{
+		type: z.string(),
+		scope: z.string().optional(),
+		message: z.string(),
+		body: z.string().optional(),
+		breaking: z.string().optional(),
+	},
+)
 
 export const ProviderConfigSchema: z.ZodType<ProviderConfig> = z.object({
 	name: z.enum(['claude', 'codex', 'agent', 'custom']),
