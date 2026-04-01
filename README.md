@@ -2119,18 +2119,21 @@ If not authenticated, run `gh auth login`. GitHub features degrade gracefully --
 
 ### AI generation not working
 
-1. Check your API key:
+1. Check if a supported CLI is installed:
 
 ```bash
-echo $OPENAI_API_KEY
-echo $ANTHROPIC_API_KEY
+claude --version   # Claude Code
+codex --version    # OpenAI Codex
+agent --version    # Cursor Agent
 ```
 
-2. Ensure AI is enabled in config:
+2. Check your AI config:
 
-```typescript
-ai: { enabled: true, provider: 'auto' }
+```bash
+cat ~/.commit-it/config.json
 ```
+
+If missing, run `commit-it` to go through the setup wizard, or create it manually.
 
 3. Ensure you have staged changes (`git add`). AI generates from the staged diff -- if nothing is staged, there's no diff to analyze.
 

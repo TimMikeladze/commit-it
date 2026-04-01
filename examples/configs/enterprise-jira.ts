@@ -27,10 +27,8 @@ export default defineConfig({
 		enabled: false,
 	},
 
-	// Disable AI for compliance reasons
-	ai: {
-		enabled: false,
-	},
+	// AI config is per-user in ~/.commit-it/config.json
+	// For compliance, users can skip the setup wizard or use --no-ai
 
 	validation: {
 		enabled: true,

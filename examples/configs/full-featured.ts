@@ -42,12 +42,8 @@ export default defineConfig({
 		charlie: 'Charlie Wilson <charlie@example.com>',
 	},
 
-	// AI-powered commit message generation
-	ai: {
-		enabled: true,
-		provider: 'auto', // 'openai' | 'anthropic' | 'auto'
-		model: 'gpt-4o-mini', // or 'claude-sonnet-4-20250514'
-	},
+	// AI config is per-user in ~/.commit-it/config.json (not per-project)
+	// Run `commit-it` once for the setup wizard, or create it manually.
 
 	// GitHub integration via gh CLI
 	github: {

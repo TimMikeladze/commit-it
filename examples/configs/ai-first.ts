@@ -3,18 +3,15 @@
  *
  * For teams that want AI to handle most commit messages.
  * Minimal validation, maximum automation.
+ *
+ * AI config is per-user (not per-project). Run `commit-it` once to go through
+ * the setup wizard, or create ~/.commit-it/config.json:
+ *   { "ai": { "auto": true, "provider": "claude" } }
  */
 import { defineConfig } from 'commit-it'
 
 export default defineConfig({
 	preset: 'conventional',
-
-	// Auto-enable AI by default
-	ai: {
-		enabled: true,
-		provider: 'auto', // Auto-detect from env
-		model: 'gpt-4o-mini', // Fast and cheap
-	},
 
 	github: {
 		enabled: true,

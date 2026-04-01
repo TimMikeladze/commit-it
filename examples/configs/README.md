@@ -195,11 +195,7 @@ export default defineConfig({
     'packages/web/**': 'web',
   },
 
-  // From ai-first.ts
-  ai: {
-    enabled: true,
-    provider: 'auto',
-  },
+  // AI is configured per-user in ~/.commit-it/config.json (not per-project)
 
   // From security-focused.ts
   validation: {
