@@ -59,6 +59,12 @@ export async function resolveProvider(
 ): Promise<CLIAdapter> {
 	// 1. --provider flag override
 	if (providerOverride) {
+		const validNames: readonly string[] = ['claude', 'codex', 'agent', 'custom']
+		if (!validNames.includes(providerOverride)) {
+			throw new Error(
+				`Unknown provider "${providerOverride}". Valid providers: ${validNames.join(', ')}`,
+			)
+		}
 		const adapter = createAdapter({
 			name: providerOverride as ProviderName,
 		})

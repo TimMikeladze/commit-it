@@ -129,9 +129,12 @@ commit-it commit
 | `--breaking` | `-b` | Mark as a breaking change (adds `!` and `BREAKING CHANGE` footer) |
 | `--ai` | | Generate commit message from staged diff using AI |
 | `--no-ai` | | Disable AI even if enabled in config |
+| `--provider <name>` | | AI provider to use (`claude`, `codex`, `agent`, `custom`) |
+| `--yes` | `-y` | Skip all prompts, accept defaults (headless mode for agents) |
 | `--co-author <value>` | `-c` | Add co-author by config alias or `"Name <email>"` |
 | `--no-github` | | Skip all GitHub API calls |
 | `--dry-run` | | Preview the commit message without creating it |
+| `--` | | Pass additional flags to `git commit` (e.g. `-- --no-verify --signoff`) |
 
 **Examples:**
 
@@ -165,6 +168,14 @@ commit-it -t feat -m "add dark mode" -c "Alice Smith <alice@example.com>"
 
 # Skip GitHub for faster local-only commits
 commit-it --no-github
+
+# Headless mode for agents (AI generate + auto-accept + commit)
+commit-it --ai -y
+
+# Pass git commit flags after --
+commit-it -- --no-verify
+commit-it --ai -- --signoff --gpg-sign
+commit-it -- --trailer "Reviewed-by: Alice <alice@co.org>"
 ```
 
 ### `branch`
@@ -382,7 +393,7 @@ Running `commit-it` (or `cit`) walks through these steps:
 
 When **amending** (`--amend`), all fields are pre-filled from the previous commit's parsed components (type, scope, message, body, breaking change).
 
-When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (type, scope, message, body) is shown. You accept or decline, then proceed through the flow with accepted values pre-filled.
+When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (type, scope, message, body) is shown. You can accept, edit in `$EDITOR`, or decline, then proceed through the flow with accepted values pre-filled. In headless mode (`--ai -y`), the suggestion is auto-accepted and committed immediately.
 
 **Validation at preview:** If validation fails, you see the errors and can choose to continue anyway or cancel.
 
@@ -703,29 +714,41 @@ commit-it presets
 
 ## AI Commit Messages
 
-Generate a commit message from your staged diff using OpenAI or Anthropic.
+Generate a commit message from your staged diff using a local AI CLI tool. No API keys needed -- commit-it shells out to whichever AI CLI you have installed.
+
+### Supported Providers
+
+| Provider | CLI | Install |
+|----------|-----|---------|
+| Claude Code | `claude` | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) |
+| OpenAI Codex | `codex` | [github.com/openai/codex](https://github.com/openai/codex) |
+| Cursor Agent | `agent` | [cursor.com](https://www.cursor.com/) |
+| Custom | any CLI | Configure a command template (see below) |
 
 ### Setup
 
-1. Set your API key:
+No setup required if you have one of the supported CLIs installed. commit-it auto-detects them from your `$PATH` in the order: `claude` → `codex` → `agent`.
 
-```bash
-# OpenAI (default model: gpt-4o-mini)
-export OPENAI_API_KEY="sk-..."
+To configure a preferred provider or custom CLI, create `~/.commit-it/config.json`:
 
-# Anthropic (default model: claude-sonnet-4-20250514)
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-2. Enable in config:
-
-```typescript
-ai: {
-  enabled: true,
-  provider: 'auto',      // Checks OPENAI_API_KEY first, then ANTHROPIC_API_KEY
-  model: 'gpt-4o-mini',  // Optional: override default model
+```json
+{
+  "ai": {
+    "auto": true,
+    "provider": "claude",
+    "providers": [
+      { "name": "claude", "model": "sonnet" },
+      { "name": "custom", "command": "my-tool --prompt {{prompt}}" }
+    ]
+  }
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `auto` | When `true`, always generate AI suggestions without needing `--ai` flag |
+| `provider` | Preferred provider name (`claude`, `codex`, `agent`, `custom`) |
+| `providers` | Ordered list of providers to try. Each can specify `model` or `command` |
 
 ### Usage
 
@@ -733,15 +756,22 @@ ai: {
 # Stage changes, then generate
 git add .
 commit-it --ai
+
+# Use a specific provider
+commit-it --ai --provider codex
+
+# Disable AI even if auto is enabled in config
+commit-it --no-ai
 ```
 
 **What happens:**
 
-1. The staged diff (up to 8000 chars) is sent to the AI provider
+1. The staged diff (up to 8000 chars) is sent to the AI CLI
 2. The AI returns a JSON suggestion with `type`, `scope`, `message`, `body`, and optional `breaking`
-3. You see the suggestion and choose to accept or decline
+3. You choose: **Accept**, **Edit in $EDITOR**, or **Decline**
 4. If accepted, the values pre-fill the interactive flow
-5. If declined, you proceed manually
+5. If edited, the message opens in your `$VISUAL`/`$EDITOR`/`vi` -- changes are parsed back into type, scope, message, and body
+6. If declined, you proceed manually
 
 ```
 🤖 Generating commit message with AI...
@@ -750,19 +780,58 @@ commit-it --ai
    fix(auth): resolve token refresh race condition
    Tokens were being refreshed concurrently leading to 401 errors...
 
-Use this AI-generated message? (Y/n)
+Use this AI-generated message?
+● Accept
+○ Edit in $EDITOR (vim)
+○ Decline (proceed manually)
 ```
 
 The AI also receives the current branch name and available types from your preset for better suggestions.
 
-### Disable AI per-commit
+### First-Run Setup
+
+On your first run, commit-it walks you through a setup wizard:
+
+1. Choose your preferred AI provider (auto-detects installed CLIs)
+2. Choose whether to always generate AI suggestions or use `--ai` per commit
+
+The wizard writes `~/.commit-it/config.json` and is skipped in headless mode (`-y`).
+
+### Headless Mode (for agents)
+
+Use `--ai -y` for fully non-interactive, agent-friendly commits:
 
 ```bash
-# Use AI even if not in config
-commit-it --ai
+# Generate AI message, auto-accept, commit -- no prompts
+commit-it --ai -y
 
-# Disable AI even if enabled in config
-commit-it --no-ai
+# Stage all + headless
+commit-it --ai -y -a
+
+# Headless with specific provider
+commit-it --ai -y --provider claude
+
+# Headless dry run
+commit-it --ai -y --dry-run
+```
+
+Exits non-zero if AI is unavailable, no staged changes exist, or generation fails.
+
+### Provider Resolution Order
+
+1. `--provider` flag (e.g. `--provider codex`)
+2. `provider` field in `~/.commit-it/config.json`
+3. First available entry in `providers` array
+4. Auto-detect from `$PATH` (`claude` → `codex` → `agent`)
+
+### Git Passthrough Flags
+
+Any flags after `--` are forwarded directly to `git commit`:
+
+```bash
+commit-it --ai -- --no-verify
+commit-it -- --signoff --gpg-sign
+commit-it -- --trailer "Acked-by: Bob"
 ```
 
 ---
@@ -1586,15 +1655,13 @@ DEFAULT_TEMPLATES.gitmoji
 Generate commit messages from diffs programmatically:
 
 ```typescript
-import { generateCommitMessage, isAIAvailable, loadConfig } from 'commit-it'
+import { generateCommitMessage, isAIAvailable } from 'commit-it'
 
-const config = await loadConfig()
-
-// Check if AI is available (provider configured + API key present)
-if (isAIAvailable(config)) {
+// Check if any AI CLI is available (claude, codex, agent, or custom)
+if (await isAIAvailable()) {
   const diff = await git.getStagedDiff()
 
-  const suggestion = await generateCommitMessage(diff, config, {
+  const suggestion = await generateCommitMessage(diff, {
     branchName: 'feature/new-api',
     existingTypes: ['feat', 'fix', 'docs', 'refactor'],
   })
@@ -1607,9 +1674,12 @@ if (isAIAvailable(config)) {
     console.log(suggestion.breaking) // undefined
   }
 }
+
+// Use a specific provider
+const suggestion = await generateCommitMessage(diff, {}, 'codex')
 ```
 
-Returns `null` if AI is not configured, the API call fails, or the response can't be parsed.
+Returns `null` if no AI CLI is available, the CLI call fails, or the response can't be parsed.
 
 ### Config Utilities
 

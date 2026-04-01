@@ -1,6 +1,8 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
+import { extraGitArgs } from '../cli'
 import { directCommit, interactiveCommit } from '../prompts/commitFlow'
 import { shouldAutoAI } from '../services/ai'
+import { needsSetup, runSetupWizard } from '../services/setup'
 
 export const commitCommand = command({
 	name: 'commit',
@@ -33,10 +35,24 @@ export const commitCommand = command({
 		coAuthor: string('co-author')
 			.alias('c')
 			.desc('Add co-author (alias or "Name <email>")'),
+		yes: boolean('yes')
+			.alias('y')
+			.desc('Skip all prompts, accept defaults (headless mode for agents)')
+			.default(false),
 	},
 	handler: async (opts) => {
 		try {
+			// First-run setup wizard (skip in headless mode)
+			if (!opts.yes && !opts.noAi && (await needsSetup())) {
+				const result = await runSetupWizard()
+				if (result?.ai?.auto) {
+					opts.ai = true
+				}
+			}
+
 			// Non-interactive mode: --type and --message provided
+			const passthroughArgs = extraGitArgs.length > 0 ? extraGitArgs : undefined
+
 			if (opts.type && opts.message) {
 				const commit = await directCommit({
 					type: opts.type,
@@ -48,6 +64,7 @@ export const commitCommand = command({
 					stageAll: opts.all,
 					amend: opts.amend,
 					coAuthor: opts.coAuthor,
+					extraArgs: passthroughArgs,
 				})
 				console.log(
 					`✓ Commit ${opts.amend ? 'amended' : 'created'}: ${commit.hash}`,
@@ -66,6 +83,8 @@ export const commitCommand = command({
 				useAI,
 				provider: opts.provider,
 				coAuthor: opts.coAuthor,
+				headless: opts.yes,
+				extraArgs: passthroughArgs,
 			})
 			console.log(
 				`✓ Commit ${opts.amend ? 'amended' : 'created'}: ${commit.hash}`,

@@ -22,6 +22,14 @@ const commands = [
 	setupAliasCommand,
 ]
 
+// Extract passthrough args after "--" before brocli sees them
+const dashDashIndex = process.argv.indexOf('--')
+export let extraGitArgs: string[] = []
+if (dashDashIndex !== -1) {
+	extraGitArgs = process.argv.splice(dashDashIndex)
+	extraGitArgs.shift() // remove the "--" itself
+}
+
 // Default to 'commit' command if no command specified or first arg is a flag
 const args = process.argv.slice(2)
 const knownCommands = new Set([

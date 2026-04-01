@@ -13,6 +13,7 @@ import {
 	getAllCoAuthors,
 	parseCoAuthor,
 } from '../services/coauthor'
+import { editInEditor } from '../services/editor'
 import { FormatValidator } from '../services/format'
 import {
 	type CommitResult,
@@ -37,6 +38,8 @@ export interface InteractiveOptions {
 	useAI?: boolean
 	provider?: string
 	coAuthor?: string
+	headless?: boolean
+	extraArgs?: string[]
 }
 
 export interface DirectCommitOptions {
@@ -51,6 +54,7 @@ export interface DirectCommitOptions {
 	stageAll?: boolean
 	amend?: boolean
 	coAuthor?: string
+	extraArgs?: string[]
 }
 
 export type { CommitResult }
@@ -142,20 +146,91 @@ export async function interactiveCommit(
 				}
 				console.log()
 
-				const useAI = await confirm({
+				// Headless mode: auto-accept and commit immediately
+				if (options.headless) {
+					if (options.stageAll) {
+						await git.stageAll()
+					}
+					const coauthors: string[] = []
+					if (options.coAuthor) {
+						const configCoAuthors = config.coauthors || {}
+						const coauthorValue = configCoAuthors[options.coAuthor]
+						if (coauthorValue) {
+							const parsed = parseCoAuthor(coauthorValue)
+							if (parsed) coauthors.push(formatCoAuthor(parsed))
+						} else {
+							const parsed = parseCoAuthor(options.coAuthor)
+							if (parsed) coauthors.push(formatCoAuthor(parsed))
+						}
+					}
+					return git.createCommit({
+						type: aiSuggestion.type,
+						scope: aiSuggestion.scope,
+						message: aiSuggestion.message,
+						body: aiSuggestion.body,
+						breaking: aiSuggestion.breaking,
+						coauthors,
+						dryRun: options.dryRun,
+						amend: options.amend,
+						extraArgs: options.extraArgs,
+					})
+				}
+
+				const aiAction = await select({
 					message: 'Use this AI-generated message?',
-					initialValue: true,
+					options: [
+						{ value: 'accept', label: 'Accept' },
+						{
+							value: 'edit',
+							label: 'Edit in $EDITOR',
+							hint: process.env.VISUAL || process.env.EDITOR || 'vi',
+						},
+						{ value: 'decline', label: 'Decline', hint: 'proceed manually' },
+					],
+					initialValue: 'accept',
 				})
 
-				if (isCancel(useAI)) {
+				if (isCancel(aiAction)) {
 					throw new Error('Cancelled')
 				}
 
-				if (!useAI) {
-					aiSuggestion = null // User declined, proceed manually
+				if (aiAction === 'edit') {
+					const header = `${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`
+					const full = aiSuggestion.body
+						? `${header}\n\n${aiSuggestion.body}`
+						: header
+					const edited = editInEditor(full)
+					const lines = edited.split('\n')
+					const headerLine = lines[0] ?? ''
+					const headerMatch = headerLine.match(
+						/^(\w+)(?:\(([^)]*)\))?:\s*(.*)$/,
+					)
+					if (headerMatch) {
+						aiSuggestion = {
+							...aiSuggestion,
+							type: headerMatch[1]!,
+							scope: headerMatch[2] || undefined,
+							message: headerMatch[3]!,
+							body: lines.slice(2).join('\n').trim() || undefined,
+						}
+					} else {
+						aiSuggestion = {
+							...aiSuggestion,
+							message: headerLine,
+							body: lines.slice(2).join('\n').trim() || undefined,
+						}
+					}
+				} else if (aiAction === 'decline') {
+					aiSuggestion = null
 				}
+			} else if (options.headless) {
+				throw new Error('AI failed to generate a commit message')
 			}
+		} else if (options.headless) {
+			throw new Error('No staged changes to generate a commit message from')
 		}
+	} else if (options.headless) {
+		throw new Error('Headless mode requires --ai flag')
 	}
 
 	// 1. Select commit type
@@ -598,6 +673,7 @@ export async function interactiveCommit(
 		issueRefs,
 		dryRun: options.dryRun,
 		amend: options.amend,
+		extraArgs: options.extraArgs,
 	})
 
 	return result
@@ -698,5 +774,6 @@ export async function directCommit(
 		coauthors,
 		dryRun: options.dryRun,
 		amend: options.amend,
+		extraArgs: options.extraArgs,
 	})
 }

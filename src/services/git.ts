@@ -35,6 +35,7 @@ export interface CommitOptions {
 	dryRun?: boolean
 	stage?: boolean
 	amend?: boolean
+	extraArgs?: string[]
 }
 
 export class GitService {
@@ -63,8 +64,15 @@ export class GitService {
 		await this.git.add('.')
 	}
 
-	async commit(message: string, amend = false): Promise<CommitResult> {
-		const result = await this.git.commit(message, amend ? ['--amend'] : [])
+	async commit(
+		message: string,
+		flags?: { amend?: boolean; extraArgs?: string[] },
+	): Promise<CommitResult> {
+		const args: string[] = []
+		if (flags?.amend) args.push('--amend')
+		if (flags?.extraArgs) args.push(...flags.extraArgs)
+
+		const result = await this.git.commit(message, args)
 		return {
 			hash: result.commit,
 			message,
@@ -243,7 +251,10 @@ export class GitService {
 			}
 		}
 
-		return this.commit(message, options.amend)
+		return this.commit(message, {
+			amend: options.amend,
+			extraArgs: options.extraArgs,
+		})
 	}
 }
 
