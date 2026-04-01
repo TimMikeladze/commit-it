@@ -64,7 +64,7 @@ export async function runSetupWizard(): Promise<UserAIConfig | null> {
 	if (!existsSync(dir)) {
 		mkdirSync(dir, { recursive: true })
 	}
-	writeFileSync(configPath, JSON.stringify(config, null, '\t') + '\n')
+	writeFileSync(configPath, `${JSON.stringify(config, null, '\t')}\n`)
 	console.log(`\n✓ Saved to ${configPath}\n`)
 
 	return config
