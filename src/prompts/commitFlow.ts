@@ -215,6 +215,32 @@ export async function interactiveCommit(
 					throw new Error('Cancelled')
 				}
 
+				if (aiAction === 'accept') {
+					const coauthors: string[] = []
+					if (options.coAuthor) {
+						const configCoAuthors = config.coauthors || {}
+						const coauthorValue = configCoAuthors[options.coAuthor]
+						if (coauthorValue) {
+							const parsed = parseCoAuthor(coauthorValue)
+							if (parsed) coauthors.push(formatCoAuthor(parsed))
+						} else {
+							const parsed = parseCoAuthor(options.coAuthor)
+							if (parsed) coauthors.push(formatCoAuthor(parsed))
+						}
+					}
+					return git.createCommit({
+						type: aiSuggestion.type,
+						scope: aiSuggestion.scope,
+						message: aiSuggestion.message,
+						body: aiSuggestion.body,
+						breaking: aiSuggestion.breaking,
+						coauthors,
+						dryRun: options.dryRun,
+						amend: options.amend,
+						extraArgs: options.extraArgs,
+					})
+				}
+
 				if (aiAction === 'edit') {
 					const header = `${aiSuggestion.type}${aiSuggestion.scope ? `(${aiSuggestion.scope})` : ''}: ${aiSuggestion.message}`
 					const full = aiSuggestion.body
