@@ -41,6 +41,9 @@ export { createCommit, GitService } from './services/git'
 // GitHub service
 export type { CommitContext } from './services/github'
 export { GitHubService } from './services/github'
+// Schema service
+export type { ProjectSchema } from './services/schema'
+export { getProjectSchema } from './services/schema'
 // Scope service
 export type { ScopeSuggestion } from './services/scope'
 export {
@@ -57,7 +60,6 @@ export {
 	DEFAULT_TEMPLATES,
 	renderTemplate,
 } from './services/template'
-
 // Validation service
 export type {
 	ParsedMessage,
@@ -70,3 +72,5 @@ export {
 	parseCommitMessage,
 	validateCommitMessage,
 } from './services/validation'
+// Agent detection
+export { isAgentEnvironment } from './utils/agent'

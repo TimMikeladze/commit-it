@@ -6,7 +6,10 @@ import {
 	multiCommit,
 } from '../prompts/commitFlow'
 import { shouldAutoAI } from '../services/ai'
+import { getProjectSchema } from '../services/schema'
 import { needsSetup, runSetupWizard } from '../services/setup'
+import { parseCommitMessage } from '../services/validation'
+import { isAgentEnvironment } from '../utils/agent'
 import { setVerbose } from '../utils/verbose'
 
 export const commitCommand = command({
@@ -57,8 +60,52 @@ export const commitCommand = command({
 				setVerbose(true)
 			}
 
-			// First-run setup wizard (skip in headless mode)
-			if (!opts.yes && !opts.noAi && (await needsSetup())) {
+			const agentMode = isAgentEnvironment()
+			const passthroughArgs = extraGitArgs.length > 0 ? extraGitArgs : undefined
+
+			// Agent environment detected with no message provided —
+			// output the project schema so the caller can self-format.
+			if (agentMode && !opts.message && !opts.type) {
+				const schema = await getProjectSchema()
+				console.log(JSON.stringify(schema, null, 2))
+				return
+			}
+
+			// Auto-parse full conventional commit string from -m
+			// e.g. commit-it -m "feat(cli): add agent detection"
+			if (opts.message && !opts.type) {
+				const parsed = parseCommitMessage(opts.message)
+				if (parsed.type) {
+					const commit = await directCommit({
+						type: parsed.type,
+						message: parsed.subject,
+						scope: opts.scope || parsed.scope,
+						body: opts.body || parsed.body,
+						breaking: opts.breaking || parsed.isBreaking,
+						breakingDescription: parsed.isBreaking
+							? parsed.footer || undefined
+							: undefined,
+						dryRun: opts.dryRun,
+						stageAll: opts.all,
+						amend: opts.amend,
+						coAuthor: opts.coAuthor,
+						extraArgs: passthroughArgs,
+					})
+					console.log(
+						`✓ Commit ${opts.amend ? 'amended' : 'created'}: ${commit.hash}`,
+					)
+					return
+				}
+				// Could not parse — fall through with helpful error
+				console.error(
+					`✗ Could not parse commit type from message. Use the format: type(scope): message`,
+				)
+				console.error(`  Example: commit-it -m "feat(cli): add feature"`)
+				process.exit(1)
+			}
+
+			// First-run setup wizard (skip in headless/agent mode)
+			if (!opts.yes && !agentMode && !opts.noAi && (await needsSetup())) {
 				const result = await runSetupWizard()
 				if (result?.ai?.auto) {
 					opts.ai = true
@@ -66,8 +113,6 @@ export const commitCommand = command({
 			}
 
 			// Non-interactive mode: --type and --message provided
-			const passthroughArgs = extraGitArgs.length > 0 ? extraGitArgs : undefined
-
 			if (opts.type && opts.message) {
 				const commit = await directCommit({
 					type: opts.type,
@@ -109,8 +154,17 @@ export const commitCommand = command({
 				return
 			}
 
+			// In agent mode without -m, we already output schema above.
+			// If we reach here with agentMode, the agent passed --type
+			// without --message, which is an error.
+			if (agentMode && !opts.message) {
+				console.error('✗ Agent mode requires -m "type(scope): message"')
+				process.exit(1)
+			}
+
 			const autoAI = await shouldAutoAI()
-			const useAI = opts.noAi ? false : opts.ai || autoAI
+			// In agent mode, skip AI generation — the agent has better context
+			const useAI = agentMode ? false : opts.noAi ? false : opts.ai || autoAI
 			const commit = await interactiveCommit({
 				skipGithub: opts.noGithub,
 				dryRun: opts.dryRun,
@@ -120,7 +174,7 @@ export const commitCommand = command({
 				useAI,
 				provider: opts.provider,
 				coAuthor: opts.coAuthor,
-				headless: opts.yes,
+				headless: opts.yes || agentMode,
 				extraArgs: passthroughArgs,
 			})
 			console.log(
