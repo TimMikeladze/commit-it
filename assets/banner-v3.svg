@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="250" viewBox="0 0 800 250">
+  <defs>
+    <linearGradient id="v3bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1b26"/>
+      <stop offset="100%" style="stop-color:#24283b"/>
+    </linearGradient>
+    <linearGradient id="v3bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7aa2f7"/>
+      <stop offset="33%" style="stop-color:#bb9af7"/>
+      <stop offset="66%" style="stop-color:#f7768e"/>
+      <stop offset="100%" style="stop-color:#e0af68"/>
+    </linearGradient>
+  </defs>
+  <!-- Window frame -->
+  <rect width="800" height="250" rx="12" fill="url(#v3bg)"/>
+  <!-- Gradient top bar -->
+  <rect y="0" width="800" height="3" rx="1.5" fill="url(#v3bar)"/>
+  <!-- Title bar -->
+  <rect y="3" width="800" height="33" fill="#16161e"/>
+  <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
+  <circle cx="44" cy="20" r="6" fill="#febc2e"/>
+  <circle cx="64" cy="20" r="6" fill="#28c840"/>
+  <text x="400" y="24" font-family="ui-monospace, 'Cascadia Code', monospace" font-size="13" fill="#565f89" text-anchor="middle">~/project</text>
+  <!-- Three panels side by side -->
+  <!-- Panel 1: CLI -->
+  <g transform="translate(20, 50)">
+    <rect width="240" height="150" rx="8" fill="#16161e" opacity="0.6"/>
+    <text x="16" y="24" font-family="ui-monospace, monospace" font-size="11" fill="#7aa2f7" font-weight="600">CLI</text>
+    <g font-family="ui-monospace, monospace" font-size="10.5" fill="#a9b1d6">
+      <text x="16" y="48"><tspan fill="#565f89">$</tspan> npx commit-it</text>
+      <text x="16" y="66"><tspan fill="#7aa2f7">◆</tspan> Select type</text>
+      <text x="16" y="84"><tspan fill="#7aa2f7">◆</tspan> Enter message</text>
+      <text x="16" y="102"><tspan fill="#7aa2f7">◆</tspan> Link issues</text>
+      <text x="16" y="120"><tspan fill="#9ece6a">✓</tspan> Committed</text>
+    </g>
+  </g>
+  <!-- Panel 2: AI -->
+  <g transform="translate(278, 50)">
+    <rect width="240" height="150" rx="8" fill="#16161e" opacity="0.6"/>
+    <text x="16" y="24" font-family="ui-monospace, monospace" font-size="11" fill="#bb9af7" font-weight="600">AI Generation</text>
+    <g font-family="ui-monospace, monospace" font-size="10.5" fill="#a9b1d6">
+      <text x="16" y="48"><tspan fill="#565f89">$</tspan> npx commit-it --ai</text>
+      <text x="16" y="66"><tspan fill="#bb9af7">◆</tspan> Analyzing diff...</text>
+      <text x="16" y="84"><tspan fill="#565f89">│</tspan> AI suggestion</text>
+      <text x="16" y="102"><tspan fill="#565f89">│</tspan><tspan fill="#e0af68"> feat(auth): add OAuth</tspan></text>
+      <text x="16" y="120"><tspan fill="#9ece6a">✓</tspan> Commit created</text>
+    </g>
+  </g>
+  <!-- Panel 3: Agent -->
+  <g transform="translate(536, 50)">
+    <rect width="244" height="150" rx="8" fill="#16161e" opacity="0.6"/>
+    <text x="16" y="24" font-family="ui-monospace, monospace" font-size="11" fill="#9ece6a" font-weight="600">Agent Mode</text>
+    <g font-family="ui-monospace, monospace" font-size="10.5" fill="#a9b1d6">
+      <text x="16" y="44" fill="#565f89">  Inside Claude Code, Cursor...</text>
+      <text x="16" y="62" fill="#565f89">  Agent runs:</text>
+      <text x="16" y="82"><tspan fill="#565f89">$</tspan> npx commit-it</text>
+      <text x="16" y="98"><tspan fill="#565f89">→</tspan> commit config as JSON</text>
+      <text x="16" y="118"><tspan fill="#565f89">$</tspan> npx commit-it -m \</text>
+      <text x="16" y="134"><tspan fill="#e0af68">  "feat: add login"</tspan></text>
+    </g>
+  </g>
+  <!-- Feature chips -->
+  <g font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
+    <rect x="46" y="214" width="118" height="24" rx="12" fill="#f7768e" opacity="0.12"/>
+    <text x="105" y="230" fill="#f7768e">Custom formats</text>
+    <rect x="174" y="214" width="138" height="24" rx="12" fill="#9ece6a" opacity="0.12"/>
+    <text x="243" y="230" fill="#9ece6a">Git hook validation</text>
+    <rect x="322" y="214" width="112" height="24" rx="12" fill="#e0af68" opacity="0.12"/>
+    <text x="378" y="230" fill="#e0af68">GitHub issues</text>
+    <rect x="444" y="214" width="108" height="24" rx="12" fill="#73daca" opacity="0.12"/>
+    <text x="498" y="230" fill="#73daca">Multi-commit</text>
+    <rect x="562" y="214" width="140" height="24" rx="12" fill="#7aa2f7" opacity="0.12"/>
+    <text x="632" y="230" fill="#7aa2f7">Interactive commits</text>
+  </g>
+</svg>
