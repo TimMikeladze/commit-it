@@ -2,14 +2,7 @@
   <img src="assets/banner-v3.svg" alt="commit-it" width="800" />
 </p>
 
-# commit-it
-
 Standardized git commits with AI message generation, interactive prompts, validation, and GitHub integration. Works as a CLI, inside AI agents, and as a programmable TypeScript API.
-
-```bash
-npx commit-it --ai    # AI writes the commit message for you
-npx commit-it         # or use the interactive flow
-```
 
 ## Why commit-it?
 
@@ -35,6 +28,14 @@ Also available as `cit` and `commit`:
 cit --ai                     # AI commit
 commit -t fix -m "resolve bug"  # non-interactive
 ```
+
+After installing, run the setup wizard to configure commit-it for your environment:
+
+```bash
+commit-it setup
+```
+
+This walks you through picking an AI provider (Claude, Codex, OpenCode, Cursor Agent), selecting a model, choosing a commit style (conventional or gitmoji), and setting your preferred editor. The config is saved to `~/.commit-it/config.json` and applies globally. You can re-run it anytime to change your settings.
 
 ## Quick Start
 
