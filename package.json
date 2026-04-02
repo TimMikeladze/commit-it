@@ -22,7 +22,7 @@
 	"scripts": {
 		"build": "bunup",
 		"dev": "bunup --watch",
-		"postinstall": "bun simple-git-hooks",
+		"prepare": "bun simple-git-hooks",
 		"lint": "bun biome check --diagnostic-level=error . && bun biome format .",
 		"lint:fix": "bun biome check --diagnostic-level=error --unsafe --write . && bun biome format --write .",
 		"lint:errors": "bun biome check --diagnostic-level error --unsafe .",
