@@ -4,6 +4,7 @@ import type { ProviderName } from './types'
 export const CLI_DETECTION_ORDER: readonly ProviderName[] = [
 	'claude',
 	'codex',
+	'opencode',
 	'agent',
 ] as const
 

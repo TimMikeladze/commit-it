@@ -88,6 +88,7 @@ export async function runSetupWizard(): Promise<UserAIConfig | null> {
 		options: [
 			{ value: 'claude', label: 'Claude Code', hint: 'Anthropic' },
 			{ value: 'codex', label: 'Codex CLI', hint: 'OpenAI' },
+			{ value: 'opencode', label: 'OpenCode', hint: 'opencode-ai' },
 			{ value: 'agent', label: 'Cursor Agent', hint: 'Cursor' },
 			{
 				value: 'custom',

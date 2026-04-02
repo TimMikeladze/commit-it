@@ -4,6 +4,7 @@ import { createAgentAdapter } from './adapters/agent'
 import { createClaudeAdapter } from './adapters/claude'
 import { createCodexAdapter } from './adapters/codex'
 import { createCustomAdapter } from './adapters/custom'
+import { createOpenCodeAdapter } from './adapters/opencode'
 import { loadUserAIConfig } from './config'
 import { detectAvailableCLI } from './detect'
 import type {
@@ -28,9 +29,10 @@ const MAX_DIFF_LENGTH = 4000
 
 export const NO_CLI_ERROR_MESSAGE = `No AI CLI detected. Install one of the following:
 
-  claude   https://docs.anthropic.com/en/docs/claude-code
-  codex    https://github.com/openai/codex
-  agent    https://www.cursor.com/
+  claude     https://docs.anthropic.com/en/docs/claude-code
+  codex      https://github.com/openai/codex
+  opencode   https://github.com/opencode-ai/opencode
+  agent      https://www.cursor.com/
 
 Or configure a custom CLI in ~/.commit-it/config.json:
 
@@ -53,6 +55,8 @@ export function createAdapter(
 			return createClaudeAdapter(opts)
 		case 'codex':
 			return createCodexAdapter(opts)
+		case 'opencode':
+			return createOpenCodeAdapter(opts)
 		case 'agent':
 			return createAgentAdapter(opts)
 		case 'custom':
@@ -69,7 +73,13 @@ export async function resolveProvider(
 	verbose('resolving AI provider...')
 	// 1. --provider flag override
 	if (providerOverride) {
-		const validNames: readonly string[] = ['claude', 'codex', 'agent', 'custom']
+		const validNames: readonly string[] = [
+			'claude',
+			'codex',
+			'opencode',
+			'agent',
+			'custom',
+		]
 		if (!validNames.includes(providerOverride)) {
 			throw new Error(
 				`Unknown provider "${providerOverride}". Valid providers: ${validNames.join(', ')}`,

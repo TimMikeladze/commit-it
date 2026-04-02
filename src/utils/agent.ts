@@ -18,6 +18,7 @@ export function isAgentEnvironment(): boolean {
 		'CLAUDE_CODE',
 		'CURSOR_AGENT',
 		'CODEX_CLI',
+		'OPENCODE',
 		'AIDER',
 		'CLINE',
 	]

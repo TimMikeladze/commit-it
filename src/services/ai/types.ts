@@ -38,10 +38,9 @@ export interface AIMultiCommitPlan {
 }
 
 export interface ProviderConfig {
-	name: 'claude' | 'codex' | 'agent' | 'custom'
+	name: 'claude' | 'codex' | 'opencode' | 'agent' | 'custom'
 	model?: string
 	command?: string
-	diffFlag?: string
 }
 
 export type ProviderName = ProviderConfig['name']
@@ -67,17 +66,18 @@ export const AICommitSuggestionSchema: z.ZodType<AICommitSuggestion> = z.object(
 )
 
 export const ProviderConfigSchema: z.ZodType<ProviderConfig> = z.object({
-	name: z.enum(['claude', 'codex', 'agent', 'custom']),
+	name: z.enum(['claude', 'codex', 'opencode', 'agent', 'custom']),
 	model: z.string().optional(),
 	command: z.string().optional(),
-	diffFlag: z.string().optional(),
 })
 
 export const UserAIConfigSchema: z.ZodType<UserAIConfig> = z.object({
 	ai: z
 		.object({
 			auto: z.boolean().default(false),
-			provider: z.enum(['claude', 'codex', 'agent', 'custom']).optional(),
+			provider: z
+				.enum(['claude', 'codex', 'opencode', 'agent', 'custom'])
+				.optional(),
 			providers: z.array(ProviderConfigSchema).default([]),
 		})
 		.optional(),

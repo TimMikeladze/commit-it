@@ -17,8 +17,13 @@ function mockExec(
 }
 
 describe('CLI_DETECTION_ORDER', () => {
-	test('should have claude, codex, agent in order', () => {
-		expect(CLI_DETECTION_ORDER).toEqual(['claude', 'codex', 'agent'])
+	test('should have claude, codex, opencode, agent in order', () => {
+		expect(CLI_DETECTION_ORDER).toEqual([
+			'claude',
+			'codex',
+			'opencode',
+			'agent',
+		])
 	})
 })
 
@@ -31,6 +36,11 @@ describe('detectAvailableCLI', () => {
 	test('should return codex when claude is not available', async () => {
 		const result = await detectAvailableCLI(mockExec(['codex']))
 		expect(result).toBe('codex')
+	})
+
+	test('should return opencode when claude and codex are not available', async () => {
+		const result = await detectAvailableCLI(mockExec(['opencode']))
+		expect(result).toBe('opencode')
 	})
 
 	test('should return agent when others are not available', async () => {

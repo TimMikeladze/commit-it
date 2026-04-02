@@ -42,7 +42,7 @@ export const commitCommand = command({
 			.default(false),
 		noAi: boolean('no-ai').desc('Disable AI even if configured').default(false),
 		provider: string('provider').desc(
-			'AI provider to use (claude, codex, agent, custom)',
+			'AI provider to use (claude, codex, opencode, agent, custom)',
 		),
 		type: string('type').alias('t').desc('Commit type (e.g. feat, fix)'),
 		message: string('message')

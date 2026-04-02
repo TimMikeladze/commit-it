@@ -85,6 +85,11 @@ describe('createAdapter', () => {
 		expect(adapter.name).toBe('codex')
 	})
 
+	test('should create opencode adapter', () => {
+		const adapter = createAdapter({ name: 'opencode' })
+		expect(adapter.name).toBe('opencode')
+	})
+
 	test('should create agent adapter', () => {
 		const adapter = createAdapter({ name: 'agent' })
 		expect(adapter.name).toBe('agent')
@@ -107,6 +112,7 @@ describe('NO_CLI_ERROR_MESSAGE', () => {
 	test('should include install URLs', () => {
 		expect(NO_CLI_ERROR_MESSAGE).toContain('claude')
 		expect(NO_CLI_ERROR_MESSAGE).toContain('codex')
+		expect(NO_CLI_ERROR_MESSAGE).toContain('opencode')
 		expect(NO_CLI_ERROR_MESSAGE).toContain('agent')
 		expect(NO_CLI_ERROR_MESSAGE).toContain('https://')
 	})
