@@ -1,3 +1,5 @@
+import type { ScopeDefinition } from '../config'
+
 export interface ValidationResult {
 	valid: boolean
 	error?: string
@@ -12,7 +14,7 @@ export interface Preset {
 	name: string
 	template: string
 	types: CommitType[]
-	scopes?: string[]
+	scopes?: Array<string | ScopeDefinition>
 	validator: (message: string) => boolean
 }
 
@@ -49,7 +51,9 @@ export class FormatValidator {
 	validateScope(scope: string): boolean {
 		if (!this.preset.scopes || this.preset.scopes.length === 0) return true
 		if (!scope) return true
-		return this.preset.scopes.includes(scope)
+		return this.preset.scopes.some((s) =>
+			typeof s === 'string' ? s === scope : s.value === scope,
+		)
 	}
 
 	formatMessage(data: CommitData): string {
@@ -74,7 +78,14 @@ export class FormatValidator {
 		return this.preset.types
 	}
 
-	getAvailableScopes(): string[] {
-		return this.preset.scopes || []
+	getAvailableScopes(): ScopeDefinition[] {
+		if (!this.preset.scopes) return []
+		return this.preset.scopes.map((s) =>
+			typeof s === 'string' ? { value: s } : s,
+		)
+	}
+
+	getAvailableScopeValues(): string[] {
+		return this.getAvailableScopes().map((s) => s.value)
 	}
 }

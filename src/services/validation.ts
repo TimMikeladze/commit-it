@@ -101,6 +101,7 @@ export function parseCommitMessage(message: string): ParsedMessage {
 export function validateCommitMessage(
 	message: string,
 	config?: Partial<ValidationConfig>,
+	predefinedScopeValues?: string[],
 ): ValidationResult {
 	const fullConfig = { ...getDefaultValidationConfig(), ...config }
 	const issues: ValidationIssue[] = []
@@ -172,14 +173,36 @@ export function validateCommitMessage(
 		}
 	}
 
-	// 7. Allowed scopes
-	if (fullConfig.allowedScopes && fullConfig.allowedScopes.length > 0) {
-		if (parsed.scope && !fullConfig.allowedScopes.includes(parsed.scope)) {
+	// 7. Allowed scopes (with scopeValidation mode support)
+	const scopeMode = fullConfig.scopeValidation
+	if (scopeMode === 'strict' || scopeMode === 'warn') {
+		// Merge allowedScopes with predefinedScopeValues into a combined list
+		const combinedScopes = [
+			...(fullConfig.allowedScopes ?? []),
+			...(predefinedScopeValues ?? []),
+		]
+		if (
+			combinedScopes.length > 0 &&
+			parsed.scope &&
+			!combinedScopes.includes(parsed.scope)
+		) {
+			const level = scopeMode === 'strict' ? 'error' : 'warning'
 			issues.push({
 				rule: 'scope-enum',
-				message: `Scope "${parsed.scope}" is not allowed. Use: ${fullConfig.allowedScopes.join(', ')}`,
-				level: 'error',
+				message: `Scope "${parsed.scope}" is not allowed. Use: ${[...new Set(combinedScopes)].join(', ')}`,
+				level,
 			})
+		}
+	} else {
+		// Default / 'off': only validate against allowedScopes if set (backward compat)
+		if (fullConfig.allowedScopes && fullConfig.allowedScopes.length > 0) {
+			if (parsed.scope && !fullConfig.allowedScopes.includes(parsed.scope)) {
+				issues.push({
+					rule: 'scope-enum',
+					message: `Scope "${parsed.scope}" is not allowed. Use: ${fullConfig.allowedScopes.join(', ')}`,
+					level: 'error',
+				})
+			}
 		}
 	}
 
@@ -306,6 +329,7 @@ export function getDefaultValidationConfig(): ValidationConfig {
 		requireIssue: false,
 		allowedTypes: undefined,
 		allowedScopes: undefined,
+		scopeValidation: undefined,
 		noTrailingPeriod: true,
 		noLeadingCapital: false,
 		customRules: [],

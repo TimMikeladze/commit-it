@@ -1,4 +1,9 @@
-export type { Config, CustomRule, ValidationConfig } from './config'
+export type {
+	Config,
+	CustomRule,
+	ScopeDefinition,
+	ValidationConfig,
+} from './config'
 export { defineConfig, getDefaultConfig, loadConfig } from './config'
 export { getPreset, listPresets, presets } from './presets'
 export type {
@@ -51,6 +56,7 @@ export {
 	getScopesFromConfig,
 	getScopesFromLabels,
 	getScopesFromPaths,
+	normalizeScopeConfig,
 } from './services/scope'
 
 // Template service

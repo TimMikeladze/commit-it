@@ -114,6 +114,7 @@ export async function interactiveCommit(
 		config.scopeMap,
 		context.prLabels || [],
 		labelPatterns,
+		config.scopes,
 	)
 
 	// If amending, load last commit data
@@ -414,6 +415,7 @@ export async function interactiveCommit(
 	// 2. Select scope with hybrid suggestions
 	let scopes: string[] = []
 	const scopeMode = config.scopeMode || 'single'
+	const scopeValidation = config.scopeValidation || 'off'
 	const presetScopes = validator.getAvailableScopes()
 
 	// Build scope options from multiple sources
@@ -431,48 +433,91 @@ export async function interactiveCommit(
 		})
 	}
 
-	// Add hybrid scope suggestions
+	// Add hybrid scope suggestions (with descriptions)
 	for (const suggestion of scopeSuggestions) {
-		let sourceLabel: string
+		let hint: string
 		if (suggestion.source === 'label') {
-			// Show colored label badge if color is available
-			sourceLabel = suggestion.color
+			hint = suggestion.color
 				? formatLabelColor(
 						suggestion.label || suggestion.value,
 						suggestion.color,
 					)
 				: `label: ${suggestion.label}`
+		} else if (suggestion.source === 'predefined' && suggestion.desc) {
+			hint = suggestion.desc
 		} else {
-			sourceLabel = 'config'
+			hint = suggestion.source
 		}
 		scopeOptions.push({
 			value: suggestion.value,
-			label: `${suggestion.value} (${sourceLabel})`,
+			label: `${suggestion.value} — ${hint}`,
 		})
 	}
 
-	// Add preset scopes
+	// Add preset scopes not already in suggestions
 	for (const s of presetScopes) {
-		if (!scopeOptions.find((o) => o.value === s)) {
-			scopeOptions.push({ value: s, label: s })
+		if (!scopeOptions.find((o) => o.value === s.value)) {
+			scopeOptions.push({
+				value: s.value,
+				label: s.desc ? `${s.value} — ${s.desc}` : s.value,
+			})
 		}
 	}
 
 	if (scopeOptions.length > 0) {
 		if (scopeMode === 'single') {
-			// Single scope selection (original behavior)
-			const singleOptions = [{ value: '', label: '(none)' }, ...scopeOptions]
-			const selectedScope = await select({
-				message: 'Select scope (or skip)',
-				options: singleOptions,
-				initialValue: suggestedScope || config.defaults?.scope || '',
-			})
+			if (scopeValidation === 'strict') {
+				// Strict mode: closed list with optional custom override
+				const singleOptions = [
+					{ value: '', label: '(none)' },
+					...scopeOptions,
+					{ value: '__custom__', label: 'other (override)' },
+				]
+				const selectedScope = await select({
+					message: 'Select scope',
+					options: singleOptions,
+					initialValue: suggestedScope || config.defaults?.scope || '',
+				})
 
-			if (isCancel(selectedScope)) {
-				throw new Error('Cancelled')
-			}
-			if (selectedScope) {
-				scopes = [selectedScope]
+				if (isCancel(selectedScope)) {
+					throw new Error('Cancelled')
+				}
+				if (selectedScope === '__custom__') {
+					const customScope = await text({
+						message: 'Enter custom scope',
+						placeholder: 'e.g. auth, payments',
+						validate: (val) =>
+							val && val.length > 0 ? undefined : 'Scope cannot be empty',
+					})
+					if (isCancel(customScope)) {
+						throw new Error('Cancelled')
+					}
+					const confirmOverride = await confirm({
+						message: `Scope "${customScope}" is not predefined. Use anyway?`,
+						initialValue: false,
+					})
+					if (isCancel(confirmOverride) || !confirmOverride) {
+						throw new Error('Cancelled')
+					}
+					scopes = [customScope]
+				} else if (selectedScope) {
+					scopes = [selectedScope]
+				}
+			} else {
+				// Warn/off mode: open list allowing freeform
+				const singleOptions = [{ value: '', label: '(none)' }, ...scopeOptions]
+				const selectedScope = await select({
+					message: 'Select scope (or skip)',
+					options: singleOptions,
+					initialValue: suggestedScope || config.defaults?.scope || '',
+				})
+
+				if (isCancel(selectedScope)) {
+					throw new Error('Cancelled')
+				}
+				if (selectedScope) {
+					scopes = [selectedScope]
+				}
 			}
 		} else {
 			// Multi-scope selection
@@ -775,10 +820,18 @@ export async function interactiveCommit(
 
 	// Validate commit message
 	const validationConfig = config.validation || getDefaultValidationConfig()
+	const interactiveValidation = {
+		...validationConfig,
+		scopeValidation: validationConfig.scopeValidation ?? config.scopeValidation,
+	}
+	const interactivePredefinedScopes = (config.scopes || []).map((s) =>
+		typeof s === 'string' ? s : s.value,
+	)
 	if (validationConfig.enabled) {
 		const validationResult = validateCommitMessage(
 			fullMessage,
-			validationConfig,
+			interactiveValidation,
+			interactivePredefinedScopes,
 		)
 
 		if (!validationResult.valid) {
@@ -853,7 +906,7 @@ export async function directCommit(
 
 	// Validate scope
 	if (options.scope && !validator.validateScope(options.scope)) {
-		const validScopes = validator.getAvailableScopes().join(', ')
+		const validScopes = validator.getAvailableScopeValues().join(', ')
 		throw new Error(
 			`Invalid scope "${options.scope}". Valid scopes: ${validScopes}`,
 		)
@@ -875,7 +928,16 @@ export async function directCommit(
 
 	// Validate the full message (must match what createCommit will produce)
 	const validationConfig = config.validation || getDefaultValidationConfig()
-	if (validationConfig.enabled) {
+	// Propagate scopeValidation from config to validation config
+	const effectiveValidation = {
+		...validationConfig,
+		scopeValidation: validationConfig.scopeValidation ?? config.scopeValidation,
+	}
+	// Collect predefined scope values for validation
+	const predefinedScopeValues = (config.scopes || []).map((s) =>
+		typeof s === 'string' ? s : s.value,
+	)
+	if (effectiveValidation.enabled) {
 		let fullMessage = `${options.type}${options.scope ? `(${options.scope})` : ''}${options.breaking ? '!' : ''}: ${options.message}`
 		if (options.body) {
 			fullMessage += `\n\n${options.body}`
@@ -897,7 +959,8 @@ export async function directCommit(
 		}
 		const validationResult = validateCommitMessage(
 			fullMessage,
-			validationConfig,
+			effectiveValidation,
+			predefinedScopeValues,
 		)
 		if (!validationResult.valid) {
 			throw new Error(

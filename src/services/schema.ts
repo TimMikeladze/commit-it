@@ -7,7 +7,8 @@ export interface ProjectSchema {
 	preset: string
 	template: string
 	types: Array<{ value: string; desc: string }>
-	scopes: string[]
+	scopes: Array<{ value: string; desc?: string }>
+	scopeValidation: 'strict' | 'warn' | 'off'
 	validation: {
 		maxHeaderLength: number
 		maxBodyLineLength: number
@@ -76,15 +77,30 @@ export async function getProjectSchema(): Promise<ProjectSchema> {
 
 	const validation = config.validation || defaultValidation
 
-	// Merge scopes from preset + config allowedScopes
-	const scopes = [...(preset.scopes || []), ...(validation.allowedScopes || [])]
-	const uniqueScopes = [...new Set(scopes)]
+	// Merge scopes from preset + config scopes + config allowedScopes (with descriptions)
+	const scopeMap = new Map<string, { value: string; desc?: string }>()
+
+	for (const s of preset.scopes || []) {
+		const entry = typeof s === 'string' ? { value: s } : s
+		scopeMap.set(entry.value, entry)
+	}
+	for (const s of config.scopes || []) {
+		const entry = typeof s === 'string' ? { value: s } : s
+		// Config scopes override preset scopes (richer descriptions)
+		scopeMap.set(entry.value, entry)
+	}
+	for (const s of validation.allowedScopes || []) {
+		if (!scopeMap.has(s)) {
+			scopeMap.set(s, { value: s })
+		}
+	}
 
 	return {
 		preset: presetName,
 		template: preset.template,
 		types: preset.types.map((t) => ({ value: t.value, desc: t.desc })),
-		scopes: uniqueScopes,
+		scopes: Array.from(scopeMap.values()),
+		scopeValidation: config.scopeValidation || 'off',
 		validation: validationToSchema(validation),
 		fields: {
 			type: 'string, required — one of types[].value',

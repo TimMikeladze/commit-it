@@ -1,6 +1,11 @@
 import { loadConfig as loadC12Config } from 'c12'
 import { z } from 'zod'
 
+export type ScopeDefinition = {
+	value: string
+	desc?: string
+}
+
 export type CustomRule = {
 	name: string
 	pattern: string
@@ -18,6 +23,7 @@ export type ValidationConfig = {
 	requireIssue: boolean
 	allowedTypes?: string[]
 	allowedScopes?: string[]
+	scopeValidation?: 'strict' | 'warn' | 'off'
 	noTrailingPeriod: boolean
 	noLeadingCapital: boolean
 	customRules: CustomRule[]
@@ -34,6 +40,8 @@ export type Config = {
 	plugins: string[]
 	scopeMap?: Record<string, string>
 	coauthors?: Record<string, string>
+	scopes?: Array<string | ScopeDefinition>
+	scopeValidation?: 'strict' | 'warn' | 'off'
 	validation?: ValidationConfig
 	github?: {
 		enabled: boolean
@@ -44,6 +52,11 @@ export type Config = {
 		}
 	}
 }
+
+const ScopeDefinitionSchema: z.ZodType<ScopeDefinition> = z.object({
+	value: z.string(),
+	desc: z.string().optional(),
+})
 
 const CustomRuleSchema: z.ZodType<CustomRule> = z.object({
 	name: z.string(),
@@ -62,6 +75,7 @@ const ValidationSchema: z.ZodType<ValidationConfig> = z.object({
 	requireIssue: z.boolean().default(false),
 	allowedTypes: z.array(z.string()).optional(),
 	allowedScopes: z.array(z.string()).optional(),
+	scopeValidation: z.enum(['strict', 'warn', 'off']).optional(),
 	noTrailingPeriod: z.boolean().default(true),
 	noLeadingCapital: z.boolean().default(false),
 	customRules: z.array(CustomRuleSchema).default([]),
@@ -80,6 +94,8 @@ const ConfigSchema: z.ZodType<Config> = z.object({
 	plugins: z.array(z.string()).default([]),
 	scopeMap: z.record(z.string(), z.string()).optional(),
 	coauthors: z.record(z.string(), z.string()).optional(),
+	scopes: z.array(z.union([z.string(), ScopeDefinitionSchema])).optional(),
+	scopeValidation: z.enum(['strict', 'warn', 'off']).optional().default('off'),
 	validation: ValidationSchema.optional(),
 	github: z
 		.object({
@@ -169,6 +185,8 @@ export function getDefaultConfig(): Config {
 		plugins: [],
 		scopeMap: undefined,
 		coauthors: undefined,
+		scopes: undefined,
+		scopeValidation: 'off',
 		validation: {
 			enabled: true,
 			maxHeaderLength: 72,

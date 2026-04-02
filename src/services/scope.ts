@@ -1,9 +1,11 @@
 import micromatch from 'micromatch'
+import type { ScopeDefinition } from '../config'
 import type { Label } from './github'
 
 export interface ScopeSuggestion {
 	value: string
-	source: 'config' | 'label'
+	source: 'predefined' | 'config' | 'label'
+	desc?: string
 	label?: string
 	color?: string // hex color for label-sourced scopes
 }
@@ -75,26 +77,56 @@ export function getScopesFromPaths(_changedFiles: string[]): ScopeSuggestion[] {
 }
 
 /**
- * Get all scope suggestions from multiple sources, deduplicated
+ * Normalize mixed scope definitions (strings and objects) into uniform ScopeSuggestions
+ */
+export function normalizeScopeConfig(
+	scopes: ReadonlyArray<string | ScopeDefinition>,
+): ScopeSuggestion[] {
+	return scopes.map((scope) => {
+		if (typeof scope === 'string') {
+			return { value: scope, source: 'predefined' as const }
+		}
+		return {
+			value: scope.value,
+			desc: scope.desc,
+			source: 'predefined' as const,
+		}
+	})
+}
+
+/**
+ * Get all scope suggestions from multiple sources, deduplicated.
+ * Priority order: predefined > config/scopeMap > labels
  */
 export function getAllScopeSuggestions(
 	changedFiles: string[],
 	scopeMap: Record<string, string> | undefined,
 	labels: Label[],
 	labelPatterns: string[],
+	predefinedScopes?: ReadonlyArray<string | ScopeDefinition>,
 ): ScopeSuggestion[] {
+	const normalized = predefinedScopes
+		? normalizeScopeConfig(predefinedScopes)
+		: []
 	const configScopes = getScopesFromConfig(changedFiles, scopeMap)
 	const labelScopes = getScopesFromLabels(labels, labelPatterns)
 
 	// Deduplicate by value, keeping highest priority source
 	const seen = new Map<string, ScopeSuggestion>()
 
-	// Config scopes have highest priority
-	for (const scope of configScopes) {
+	// Predefined scopes have highest priority
+	for (const scope of normalized) {
 		seen.set(scope.value, scope)
 	}
 
-	// Label scopes next
+	// Config scopes next
+	for (const scope of configScopes) {
+		if (!seen.has(scope.value)) {
+			seen.set(scope.value, scope)
+		}
+	}
+
+	// Label scopes last
 	for (const scope of labelScopes) {
 		if (!seen.has(scope.value)) {
 			seen.set(scope.value, scope)
