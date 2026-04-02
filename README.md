@@ -6,6 +6,7 @@ Interactive CLI for creating standardized git commits with GitHub integration, A
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Agent Mode](#agent-mode)
 - [Commands](#commands)
   - [`commit` (default)](#commit-default)
   - [`branch`](#branch)
@@ -45,6 +46,7 @@ Interactive CLI for creating standardized git commits with GitHub integration, A
   - [Scope Suggestions](#scope-suggestions-api)
   - [Co-author Utilities](#co-author-utilities)
   - [Template Engine](#template-engine)
+  - [Project Schema](#project-schema)
   - [AI Generation](#ai-generation)
   - [Config Utilities](#config-utilities)
   - [Preset Utilities](#preset-utilities)
@@ -103,6 +105,80 @@ Running `commit-it` with no arguments (or with only flags) defaults to the `comm
 
 ---
 
+## Agent Mode
+
+When commit-it detects it's running inside an AI agent (Claude Code, Cursor, Aider, Cline, or any non-TTY environment), it automatically adapts its behavior:
+
+1. **No flags** — outputs the project's commit schema as JSON so the agent can generate a conforming message itself
+2. **`-m` with a full message** — auto-parses the type and scope, validates, and commits directly
+3. **AI generation is skipped** — the calling agent already has full context, so spawning a nested AI call would be redundant
+
+This means agents don't need special configuration or flags. They just call `commit-it` and it figures out what to do.
+
+### How it works
+
+**Step 1 — Agent discovers the schema:**
+
+```bash
+$ commit-it
+# Non-TTY detected → outputs JSON:
+{
+  "preset": "conventional",
+  "template": "{type}({scope}): {message}",
+  "types": [
+    { "value": "feat", "desc": "A new feature" },
+    { "value": "fix", "desc": "A bug fix" },
+    ...
+  ],
+  "scopes": [],
+  "validation": {
+    "maxHeaderLength": 72,
+    "requireScope": false,
+    ...
+  },
+  "usage": [
+    "commit-it -m \"type(scope): message\"",
+    ...
+  ]
+}
+```
+
+**Step 2 — Agent generates and commits:**
+
+```bash
+# Just pass -m with a conventional commit string — no --type needed
+commit-it -m "feat(cli): add agent detection"
+
+# With body for complex changes
+commit-it -m "refactor(auth): extract token validation" --body "Moved shared logic into a dedicated module"
+
+# Stage everything and commit
+commit-it -a -m "fix(api): handle null response from upstream"
+```
+
+The message is validated against the project's configured preset and rules before the commit is created.
+
+### Detection
+
+Agent mode activates automatically when either:
+
+- **stdin is not a TTY** (covers most agent/CI invocations)
+- **A known agent environment variable is set**: `CLAUDE_CODE`, `CURSOR_AGENT`, `CODEX_CLI`, `AIDER`, `CLINE`
+
+### Programmatic access
+
+```typescript
+import { getProjectSchema, isAgentEnvironment } from 'commit-it'
+
+// Check if running in an agent
+if (isAgentEnvironment()) {
+  const schema = await getProjectSchema()
+  // schema.types, schema.scopes, schema.template, schema.validation
+}
+```
+
+---
+
 ## Commands
 
 ### `commit` (default)
@@ -122,7 +198,7 @@ commit-it commit
 | Flag | Alias | Description |
 |------|-------|-------------|
 | `--type <type>` | `-t` | Commit type (e.g. `feat`, `fix`). Enables non-interactive mode when combined with `--message` |
-| `--message <msg>` | `-m` | Commit message. Enables non-interactive mode when combined with `--type` |
+| `--message <msg>` | `-m` | Commit message. Accepts a full conventional commit string (e.g. `"feat(cli): add feature"`) or a plain message when combined with `--type` |
 | `--scope <scope>` | `-s` | Commit scope |
 | `--body <text>` | | Commit body |
 | `--all` | `-a` | Stage all changes before committing (`git add .`) |
@@ -171,6 +247,9 @@ commit-it -t feat -m "add dark mode" -c "Alice Smith <alice@example.com>"
 
 # Skip GitHub for faster local-only commits
 commit-it --no-github
+
+# Pass -m with a full conventional commit string (no --type needed)
+commit-it -m "feat(cli): add new command"
 
 # Headless mode for agents (AI generate + auto-accept + commit)
 commit-it --ai -y
@@ -427,10 +506,19 @@ When using **AI** (`--ai`), the staged diff is analyzed and a full suggestion (t
 
 ## Non-Interactive Mode
 
-When both `--type` and `--message` are provided, commit-it skips all prompts and creates the commit directly. The message is still validated against your configured rules.
+commit-it skips all prompts and creates the commit directly when you provide either:
+
+- **`-m` with a full conventional commit string** — type and scope are auto-parsed
+- **`--type` and `--message` together** — explicit type with a plain message
+
+The message is validated against your configured rules in both cases.
 
 ```bash
-# Minimal
+# Full conventional commit string (auto-parsed, no --type needed)
+commit-it -m "feat(auth): add user authentication"
+commit-it -m "fix: resolve startup crash"
+
+# Explicit type + message
 commit-it -t feat -m "add user authentication"
 
 # With scope and body
@@ -452,7 +540,7 @@ Invalid types or scopes cause an error listing valid options:
 ✗ Error creating commit: Invalid commit type "yolo". Valid types: feat, fix, docs, style, refactor, perf, test, chore
 ```
 
-This mode is ideal for CI/CD pipelines, scripts, git hooks, and any automation that needs structured commits.
+This mode is ideal for CI/CD pipelines, scripts, git hooks, AI agents, and any automation that needs structured commits.
 
 ---
 
@@ -1698,6 +1786,28 @@ DEFAULT_TEMPLATES.conventional
 
 DEFAULT_TEMPLATES.gitmoji
 // "{{type}} {{#scope}}({{scope}}) {{/scope}}{{message}}"
+```
+
+### Project Schema
+
+Get the project's commit schema for agent integrations or tooling:
+
+```typescript
+import { getProjectSchema, isAgentEnvironment } from 'commit-it'
+
+const schema = await getProjectSchema()
+// {
+//   preset: 'conventional',
+//   template: '{type}({scope}): {message}',
+//   types: [{ value: 'feat', desc: 'A new feature' }, ...],
+//   scopes: [],
+//   validation: { maxHeaderLength: 72, requireScope: false, ... },
+//   fields: { type: 'string, required — one of types[].value', ... },
+//   usage: ['commit-it -m "type(scope): message"', ...]
+// }
+
+// Check if running inside an AI agent
+isAgentEnvironment() // true when stdin is not a TTY or agent env vars are set
 ```
 
 ### AI Generation
