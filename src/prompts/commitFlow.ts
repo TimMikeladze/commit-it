@@ -317,10 +317,19 @@ export async function interactiveCommit(
 			note(fullMessage, 'Commit preview')
 
 			const validationConfig = config.validation || getDefaultValidationConfig()
+			const aiValidation = {
+				...validationConfig,
+				scopeValidation:
+					validationConfig.scopeValidation ?? config.scopeValidation,
+			}
+			const aiPredefinedScopes = (config.scopes || []).map((s) =>
+				typeof s === 'string' ? s : s.value,
+			)
 			if (validationConfig.enabled) {
 				const validationResult = validateCommitMessage(
 					fullMessage,
-					validationConfig,
+					aiValidation,
+					aiPredefinedScopes,
 				)
 				if (!validationResult.valid) {
 					log.error(
