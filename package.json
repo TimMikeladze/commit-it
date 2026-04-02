@@ -1,6 +1,6 @@
 {
 	"name": "commit-it",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Standardized git commits with AI message generation, interactive prompts, validation, and GitHub integration. Works as a CLI, inside AI agents, and as a programmable TypeScript API.",
 	"bin": {
 		"commit-it": "./dist/cli.js",
