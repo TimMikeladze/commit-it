@@ -1,16 +1,26 @@
 import { boolean, command, string } from '@drizzle-team/brocli'
 import { extraGitArgs } from '../cli'
+import { loadConfig } from '../config'
+import { getPreset } from '../presets'
 import {
 	directCommit,
 	interactiveCommit,
 	multiCommit,
 } from '../prompts/commitFlow'
-import { shouldAutoAI } from '../services/ai'
+import {
+	generateCommitMessage,
+	generateMultiCommitPlan,
+	isAIAvailable,
+	shouldAutoAI,
+} from '../services/ai'
+import { loadUserAIConfig } from '../services/ai/config'
+import { FormatValidator } from '../services/format'
+import { GitService } from '../services/git'
 import { getProjectSchema } from '../services/schema'
 import { needsSetup, runSetupWizard } from '../services/setup'
 import { parseCommitMessage } from '../services/validation'
 import { isAgentEnvironment } from '../utils/agent'
-import { setVerbose } from '../utils/verbose'
+import { setVerbose, verbose } from '../utils/verbose'
 
 export const commitCommand = command({
 	name: 'commit',
@@ -64,10 +74,73 @@ export const commitCommand = command({
 			const passthroughArgs = extraGitArgs.length > 0 ? extraGitArgs : undefined
 
 			// Agent environment detected with no message provided —
-			// output the project schema so the caller can self-format.
+			// output the project schema + AI suggestion so the caller
+			// can use it directly or self-format.
 			if (agentMode && !opts.message && !opts.type) {
 				const schema = await getProjectSchema()
-				console.log(JSON.stringify(schema, null, 2))
+				const output: Record<string, unknown> = { ...schema }
+
+				const aiAvailable = !opts.noAi && (await isAIAvailable(opts.provider))
+				if (aiAvailable) {
+					const git = new GitService()
+					if (opts.all) {
+						await git.stageAll()
+					}
+					const diff = await git.getStagedDiff()
+					const stagedFiles = await git.getStagedFiles()
+
+					if (diff && stagedFiles.length > 0) {
+						const config = await loadConfig()
+						const userCfg = await loadUserAIConfig()
+						const presetName = userCfg?.preset || config.preset
+						const preset = getPreset(presetName)
+						const validator = new FormatValidator(preset)
+						const context = {
+							branchName: await git.getBranchName(),
+							existingTypes: validator.getAvailableTypes(),
+							presetName: preset.name,
+							template: preset.template,
+						}
+
+						// Heuristic: use multi-commit when files span 3+ distinct
+						// top-level directories — signals unrelated changes bundled together.
+						const topDirs = new Set(stagedFiles.map((f) => f.split('/')[0]!))
+						const useMulti = topDirs.size >= 3
+
+						verbose(
+							`agent auto-detect: ${stagedFiles.length} files, ${topDirs.size} top-dirs → ${useMulti ? 'multi' : 'single'}`,
+						)
+
+						if (useMulti) {
+							const plan = await generateMultiCommitPlan(
+								diff,
+								stagedFiles,
+								context,
+								opts.provider,
+							)
+							if (plan && plan.commits.length > 0) {
+								output.suggestion = {
+									mode: 'multi',
+									commits: plan.commits,
+								}
+							}
+						} else {
+							const suggestion = await generateCommitMessage(
+								diff,
+								context,
+								opts.provider,
+							)
+							if (suggestion) {
+								output.suggestion = {
+									mode: 'single',
+									...suggestion,
+								}
+							}
+						}
+					}
+				}
+
+				console.log(JSON.stringify(output, null, 2))
 				return
 			}
 

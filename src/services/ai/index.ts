@@ -10,6 +10,7 @@ import type {
 	AICommitSuggestion,
 	AIMultiCommitPlan,
 	CLIAdapter,
+	ExecuteOptions,
 	GenerateContext,
 	ProviderConfig,
 	ProviderName,
@@ -19,10 +20,11 @@ export type {
 	AICommitSuggestion,
 	AIMultiCommitPlan,
 	CLIAdapter,
+	ExecuteOptions,
 	GenerateContext,
 }
 
-const MAX_DIFF_LENGTH = 8000
+const MAX_DIFF_LENGTH = 4000
 
 export const NO_CLI_ERROR_MESSAGE = `No AI CLI detected. Install one of the following:
 
@@ -186,7 +188,7 @@ export async function generateCommitMessage(
 		verbose(
 			`prompt length: ${prompt.length} chars, diff length: ${diff.length} chars`,
 		)
-		const output = await adapter.execute(prompt)
+		const output = await adapter.execute(prompt, { maxTokens: 256 })
 		verbose(`AI response length: ${output.length} chars`)
 		verbose(`AI raw response:\n${output}`)
 		const parsed = parseAIResponse(output)
@@ -281,7 +283,7 @@ export async function generateMultiCommitPlan(
 		verbose(
 			`multi-commit prompt length: ${prompt.length} chars, files: ${files.length}`,
 		)
-		const output = await adapter.execute(prompt)
+		const output = await adapter.execute(prompt, { maxTokens: 1024 })
 		verbose(`AI response length: ${output.length} chars`)
 		verbose(`AI raw response:\n${output}`)
 		return parseMultiCommitResponse(output)

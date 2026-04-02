@@ -1,9 +1,13 @@
 import { z } from 'zod'
 
+export interface ExecuteOptions {
+	maxTokens?: number
+}
+
 export interface CLIAdapter {
 	readonly name: string
 	isAvailable(): Promise<boolean>
-	execute(prompt: string): Promise<string>
+	execute(prompt: string, options?: ExecuteOptions): Promise<string>
 }
 
 export interface AICommitSuggestion {

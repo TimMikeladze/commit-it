@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
-	DETECTION_ORDER,
+	CLI_DETECTION_ORDER,
 	detectAvailableCLI,
 } from '../../../src/services/ai/detect'
 import type { ExecResult } from '../../../src/utils/execFileNoThrow'
@@ -16,9 +16,9 @@ function mockExec(
 	}
 }
 
-describe('DETECTION_ORDER', () => {
+describe('CLI_DETECTION_ORDER', () => {
 	test('should have claude, codex, agent in order', () => {
-		expect(DETECTION_ORDER).toEqual(['claude', 'codex', 'agent'])
+		expect(CLI_DETECTION_ORDER).toEqual(['claude', 'codex', 'agent'])
 	})
 })
 
