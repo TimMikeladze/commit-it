@@ -1,5 +1,5 @@
-import { loadConfig } from '../config'
 import type { ValidationConfig } from '../config'
+import { loadConfig } from '../config'
 import { getPreset } from '../presets'
 import { loadUserAIConfig } from './ai/config'
 
@@ -77,10 +77,7 @@ export async function getProjectSchema(): Promise<ProjectSchema> {
 	const validation = config.validation || defaultValidation
 
 	// Merge scopes from preset + config allowedScopes
-	const scopes = [
-		...(preset.scopes || []),
-		...(validation.allowedScopes || []),
-	]
+	const scopes = [...(preset.scopes || []), ...(validation.allowedScopes || [])]
 	const uniqueScopes = [...new Set(scopes)]
 
 	return {

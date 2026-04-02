@@ -34,7 +34,7 @@
 		"type-check": "tsc --noEmit"
 	},
 	"simple-git-hooks": {
-		"pre-commit": "bun check"
+		"pre-commit": "bun check && git add -u"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.2",
